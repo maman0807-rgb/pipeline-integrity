@@ -15,7 +15,7 @@ const SAFETY_DEFAULT = 5
 const EMPTY = {
   part_number: '', description: '', category: 'Spare Part', satuan: '',
   stok: 0, safety_stock: SAFETY_DEFAULT, unit_price: '', lead_time_days: '',
-  penyimpanan: '', tgl_masuk: '',
+  kimap: '', penyimpanan: '', tgl_masuk: '',
 }
 
 const rp = n => 'Rp ' + (Number(n) || 0).toLocaleString('id-ID')
@@ -207,6 +207,7 @@ export default function StokGudang() {
         safety_stock:   Number(get(r,'safety stock','safetystock')) || SAFETY_DEFAULT,
         unit_price:     Number(get(r,'harga satuan','harga','unitprice','price')) || null,
         lead_time_days: Number(get(r,'lead time','leadtime')) || null,
+        kimap:          get(r,'kimap','ki map','kode kimap','no kimap'),
         penyimpanan:    get(r,'penyimpanan','lokasi','rak'),
         tgl_masuk:      get(r,'tgl masuk','tglmasuk','tanggal masuk') || null,
       })).filter(r => r.part_number)
@@ -229,6 +230,7 @@ export default function StokGudang() {
       'Safety Stock':     m.safety_stock ?? SAFETY_DEFAULT,
       'Harga Satuan':     m.unit_price ?? '',
       'Lead Time (hari)': m.lead_time_days ?? '',
+      'KIMAP':            m.kimap || '',
       'Penyimpanan':      m.penyimpanan || '',
       'Tgl Masuk':        m.tgl_masuk || '',
     }))
@@ -240,9 +242,9 @@ export default function StokGudang() {
 
   function downloadTemplate() {
     const ws = XLSX.utils.aoa_to_sheet([
-      ['Part Number','Description','Kategori','Satuan','Stok','Safety Stock','Harga Satuan','Lead Time (hari)','Penyimpanan','Tgl Masuk'],
-      ['PIP-001','Pipa CS 2" SCH 40','Pipe Fittings','Btg',10,3,1500000,30,'GD-01','2026-01-01'],
-      ['VLV-001','Ball Valve 2" SS','Valve & Actuator','Pcs',5,2,2800000,45,'GD-02','2026-01-01'],
+      ['Part Number','Description','Kategori','Satuan','Stok','Safety Stock','Harga Satuan','Lead Time (hari)','KIMAP','Penyimpanan','Tgl Masuk'],
+      ['PIP-001','Pipa CS 2" SCH 40','Pipe Fittings','Btg',10,3,1500000,30,'KM-001','GD-01','2026-01-01'],
+      ['VLV-001','Ball Valve 2" SS','Valve & Actuator','Pcs',5,2,2800000,45,'KM-002','GD-02','2026-01-01'],
     ])
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Template')
@@ -377,7 +379,7 @@ export default function StokGudang() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-800">
-                    {['Part Number','Deskripsi','Kategori','Penyimpanan','Stok','Harga','Status','Aksi'].map(h => (
+                    {['Part Number','Deskripsi','Kategori','KIMAP','Penyimpanan','Stok','Harga','Status','Aksi'].map(h => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -388,6 +390,7 @@ export default function StokGudang() {
                       <td className="px-4 py-3 font-mono text-xs font-semibold text-blue-300 whitespace-nowrap">{m.part_number}</td>
                       <td className="px-4 py-3 text-slate-200 max-w-xs">{m.description}</td>
                       <td className="px-4 py-3 whitespace-nowrap"><KatBadge kat={m.category} /></td>
+                      <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap font-mono">{m.kimap || '—'}</td>
                       <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{m.penyimpanan || '—'}</td>
                       <td className="px-4 py-3 font-bold text-white whitespace-nowrap">
                         {m.stok} <span className="text-xs font-normal text-slate-400">{m.satuan || ''}</span>
@@ -502,8 +505,8 @@ export default function StokGudang() {
                 ['Part Number','part_number','text',true],['Deskripsi','description','text',true],
                 ['Satuan','satuan','text'],['Stok','stok','number'],
                 ['Safety Stock','safety_stock','number'],['Harga Satuan (Rp)','unit_price','number'],
-                ['Lead Time (hari)','lead_time_days','number'],['Penyimpanan','penyimpanan','text'],
-                ['Tgl Masuk','tgl_masuk','date'],
+                ['Lead Time (hari)','lead_time_days','number'],['KIMAP','kimap','text'],
+                ['Penyimpanan','penyimpanan','text'],['Tgl Masuk','tgl_masuk','date'],
               ].map(([l, k, t, req]) => (
                 <div key={k}>
                   <label className={lbl}>{l}{req && <span className="text-red-400 ml-1">*</span>}</label>
