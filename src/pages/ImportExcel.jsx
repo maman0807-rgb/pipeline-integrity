@@ -24,12 +24,16 @@ function toDate(v) {
 
 function parseNum(v) {
   if (v === '' || v === null || v === undefined) return null
-  const n = Number(String(v).replace(/[^0-9.-]/g, ''))
+  if (typeof v === 'number') return isNaN(v) ? null : v
+  // ambil angka pertama saja — hindari bug concatenasi digit dari teks multi-angka
+  const match = String(v).trim().match(/^-?[\d.]+/)
+  if (!match) return null
+  const n = Number(match[0])
   return isNaN(n) ? null : n
 }
 
 export default function ImportExcel() {
-  const [step, setStep]       = useState('idle') // idle | preview | importing | done
+  const [step, setStep]       = useState('idle')
   const [preview, setPreview] = useState(null)
   const [log, setLog]         = useState([])
   const fileRef = useRef()
@@ -47,7 +51,6 @@ export default function ImportExcel() {
     const raw = (sheet, skip = 0) =>
       sheet ? XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' }).slice(skip) : []
 
-    // --- Pipelines dari sheet "Contoh" ---
     const contohRows = raw(sheetContoh, 1).filter(r => r[0] && String(r[0]).match(/^\d/))
     const pipes = contohRows.map(r => ({
       wk: r[1] || 'Prabumulih',
@@ -74,7 +77,6 @@ export default function ImportExcel() {
       integrity_status: ['GOOD','MONITOR','BAD'].includes(r[29]) ? r[29] : null,
     })).filter(p => p.dari_sumur)
 
-    // --- Pipeline segments dari sheet "Monitoring Inspeksi" ---
     const monRows = raw(sheetMonitoring, 3).filter(r => r[0] && String(r[0]).match(/^\d/))
     const segs = monRows.map(r => ({
       category: r[1] || null,
@@ -98,7 +100,6 @@ export default function ImportExcel() {
       tindak_lanjut: r[19] || null,
     })).filter(s => s.from_loc || s.to_loc)
 
-    // --- Leak events dari sheet "History Kebocoran" ---
     const leakRows = raw(sheetKebocoran, 3).filter(r => r[0] && String(r[0]).match(/^\d/))
     const leaks = leakRows.map(r => ({
       deskripsi_pipa: r[1] || null,
@@ -129,8 +130,23 @@ export default function ImportExcel() {
     setStep('importing')
     const logs = []
 
+    // Cek duplikat pipelines berdasarkan dari_sumur
+    const { data: existingPipes } = await supabase.from('pipelines').select('dari_sumur')
+    const existingSet = new Set((existingPipes || []).map(p => p.dari_sumur))
+    const newPipes = preview.pipes.filter(p => !existingSet.has(p.dari_sumur))
+    const skippedPipes = preview.pipes.length - newPipes.length
+    if (skippedPipes > 0) logs.push(`⚠️ Flowline: ${skippedPipes} duplikat dilewati`)
+
+    // Cek duplikat segments berdasarkan from_loc+to_loc
+    const { data: existingSegs } = await supabase.from('pipeline_segments').select('from_loc,to_loc')
+    const segSet = new Set((existingSegs || []).map(s => `${s.from_loc}|${s.to_loc}`))
+    const newSegs = preview.segs.filter(s => !segSet.has(`${s.from_loc}|${s.to_loc}`))
+    const skippedSegs = preview.segs.length - newSegs.length
+    if (skippedSegs > 0) logs.push(`⚠️ Segmen: ${skippedSegs} duplikat dilewati`)
+
     const CHUNK = 200
     const insertChunked = async (table, data, label) => {
+      if (data.length === 0) { logs.push(`ℹ️ ${label}: tidak ada data baru`); return }
       let ok = 0
       for (let i = 0; i < data.length; i += CHUNK) {
         const { error } = await supabase.from(table).insert(data.slice(i, i + CHUNK))
@@ -140,8 +156,8 @@ export default function ImportExcel() {
       logs.push(`✅ ${label}: ${ok} baris berhasil diimport`)
     }
 
-    await insertChunked('pipelines',         preview.pipes, 'Flowline (Contoh)')
-    await insertChunked('pipeline_segments',  preview.segs,  'Segmen (Monitoring Inspeksi)')
+    await insertChunked('pipelines',         newPipes,      'Flowline (Contoh)')
+    await insertChunked('pipeline_segments',  newSegs,       'Segmen (Monitoring Inspeksi)')
     await insertChunked('leak_events',        preview.leaks, 'Kebocoran (History Kebocoran)')
 
     setLog(logs)
@@ -184,7 +200,7 @@ export default function ImportExcel() {
           </div>
           <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-4 flex gap-3">
             <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
-            <p className="text-sm text-yellow-300">Data akan ditambahkan ke database. Kalau sudah ada data sebelumnya, import ini akan menambah (bukan menimpa). Jalankan hanya sekali untuk data awal.</p>
+            <p className="text-sm text-yellow-300">Duplikat otomatis dilewati berdasarkan nama sumur/lokasi. Data kebocoran selalu ditambahkan.</p>
           </div>
           <div className="flex gap-3">
             <button onClick={() => setStep('idle')} className="px-4 py-2 text-sm text-slate-400 hover:text-white border border-slate-700 rounded-xl">Batal</button>

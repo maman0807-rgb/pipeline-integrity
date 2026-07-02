@@ -24,10 +24,21 @@ function pof(leakCount) {
   if (leakCount >= 2)  return 2
   return 1
 }
-function cof(status) {
+
+function cof(status, fluid) {
+  const isGas = (fluid || '').toUpperCase().includes('GAS')
   if (status === 'BAD')     return 5
-  if (status === 'MONITOR') return 3
+  if (status === 'MONITOR') return isGas ? 4 : 3
+  if (status === 'GOOD')    return isGas ? 2 : 1
   return 1
+}
+
+const COF_DESC = {
+  5: 'BAD — kegagalan berdampak besar',
+  4: 'MONITOR + Gas — potensi bahaya tinggi',
+  3: 'MONITOR + Oil/Lain — perlu pengawasan',
+  2: 'GOOD + Gas — potensi risiko residual',
+  1: 'GOOD — kondisi normal',
 }
 
 export default function Matrix() {
@@ -36,14 +47,14 @@ export default function Matrix() {
   const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
-    supabase.from('pipeline_segments').select('id,from_loc,to_loc,category,service_fluid,integrity_status,leak_event,size_inch,length_m')
+    supabase.from('pipeline_segments')
+      .select('id,from_loc,to_loc,category,service_fluid,integrity_status,leak_event,size_inch,length_m')
       .then(({ data }) => {
-        setItems((data || []).map(d => ({
-          ...d,
-          _pof:  pof(d.leak_event || 0),
-          _cof:  cof(d.integrity_status),
-          _risk: RISK[pof(d.leak_event || 0) - 1][cof(d.integrity_status) - 1],
-        })))
+        setItems((data || []).map(d => {
+          const p = pof(d.leak_event || 0)
+          const c = cof(d.integrity_status, d.service_fluid)
+          return { ...d, _pof: p, _cof: c, _risk: RISK[p-1][c-1] }
+        }))
         setLoading(false)
       })
   }, [])
@@ -94,6 +105,15 @@ export default function Matrix() {
         </div>
       </div>
 
+      {/* CoF legend */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {[1,2,3,4,5].map(c => (
+          <div key={c} style={{ background: '#1e293b', borderRadius: 8, padding: '4px 12px', fontSize: 11, color: '#94a3b8' }}>
+            <span style={{ color: 'white', fontWeight: 700 }}>CoF {c}:</span> {COF_DESC[c]}
+          </div>
+        ))}
+      </div>
+
       {/* Matrix grid */}
       <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
         <div style={{ display: 'inline-block', minWidth: 'max-content' }}>
@@ -113,7 +133,6 @@ export default function Matrix() {
 
           {/* PoF label + rows */}
           <div style={{ display: 'flex', gap: 8 }}>
-            {/* PoF axis label */}
             <div style={{ width: 64, display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[5,4,3,2,1].map(p => (
                 <div key={p} style={{
@@ -126,7 +145,6 @@ export default function Matrix() {
               ))}
             </div>
 
-            {/* Cells */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[5,4,3,2,1].map(p => (
                 <div key={p} style={{ display: 'flex', gap: 8 }}>
@@ -152,7 +170,6 @@ export default function Matrix() {
                         onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.2)'}
                         onMouseLeave={e => e.currentTarget.style.filter = 'brightness(1)'}
                       >
-                        {/* Risk badge */}
                         <div style={{
                           position: 'absolute', top: 8, right: 8,
                           background: col.text + '22', border: `1px solid ${col.text}55`,
@@ -162,7 +179,6 @@ export default function Matrix() {
                           R{risk}
                         </div>
 
-                        {/* Count badge */}
                         {list.length > 0 && (
                           <div style={{
                             position: 'absolute', bottom: 8, right: 8,
@@ -174,7 +190,6 @@ export default function Matrix() {
                           </div>
                         )}
 
-                        {/* Items preview */}
                         <div style={{ paddingTop: 4 }}>
                           {list.slice(0, 3).map(it => (
                             <div key={it.id} style={{
@@ -188,9 +203,7 @@ export default function Matrix() {
                             </div>
                           ))}
                           {list.length > 3 && (
-                            <div style={{ fontSize: 11, color: '#94a3b8' }}>
-                              +{list.length - 3} lagi
-                            </div>
+                            <div style={{ fontSize: 11, color: '#94a3b8' }}>+{list.length - 3} lagi</div>
                           )}
                         </div>
                       </div>
@@ -205,10 +218,7 @@ export default function Matrix() {
 
       {/* Detail panel */}
       {selected && (
-        <div style={{
-          background: '#0f172a', border: '1px solid #1e293b',
-          borderRadius: 16, padding: 24
-        }}>
+        <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 16, padding: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{
@@ -223,11 +233,10 @@ export default function Matrix() {
               <span style={{ color: 'white', fontWeight: 700 }}>
                 PoF {selected.p} × CoF {selected.c} — {selected.list.length} segmen
               </span>
+              <span style={{ color: '#64748b', fontSize: 12 }}>{COF_DESC[selected.c]}</span>
             </div>
             <button onClick={() => setSelected(null)}
-              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 20 }}>
-              ✕
-            </button>
+              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 20 }}>✕</button>
           </div>
 
           {selected.list.length === 0

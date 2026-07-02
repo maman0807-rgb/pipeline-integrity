@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Plus, Search, Pencil, X, Check } from 'lucide-react'
+import { Plus, Search, Pencil, X, Check, Download } from 'lucide-react'
+import * as XLSX from 'xlsx'
+import { useToast } from '../hooks/useToast'
+import Toast from '../components/Toast'
+
+const PAGE_SIZE = 50
 
 const EMPTY = {
   category: 'FLOWLINE', from_loc: '', to_loc: '', size_inch: '',
@@ -19,20 +24,40 @@ function Badge({ status }) {
   return <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${map[status] ?? 'bg-slate-700 text-slate-300'}`}>{status ?? '—'}</span>
 }
 
+function Pager({ page, total, onChange }) {
+  const pages = Math.ceil(total / PAGE_SIZE)
+  if (pages <= 1) return null
+  return (
+    <div className="flex items-center justify-between px-4 py-3 border-t border-slate-800">
+      <span className="text-xs text-slate-500">{total} data · hal {page + 1}/{pages}</span>
+      <div className="flex gap-2">
+        <button disabled={page === 0} onClick={() => onChange(page - 1)}
+          className="px-3 py-1.5 text-xs rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-40">← Sebelumnya</button>
+        <button disabled={page >= pages - 1} onClick={() => onChange(page + 1)}
+          className="px-3 py-1.5 text-xs rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-40">Selanjutnya →</button>
+      </div>
+    </div>
+  )
+}
+
 export default function Monitoring() {
-  const [rows, setRows]       = useState([])
-  const [q, setQ]             = useState('')
+  const [rows, setRows]         = useState([])
+  const [q, setQ]               = useState('')
   const [filterStatus, setFilterStatus] = useState('ALL')
-  const [modal, setModal]     = useState(null)
-  const [form, setForm]       = useState(EMPTY)
-  const [saving, setSaving]   = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [page, setPage]         = useState(0)
+  const [modal, setModal]       = useState(null)
+  const [form, setForm]         = useState(EMPTY)
+  const [saving, setSaving]     = useState(false)
+  const [loading, setLoading]   = useState(true)
+  const { toasts, toast }       = useToast()
 
   useEffect(() => { load() }, [])
+  useEffect(() => { setPage(0) }, [q, filterStatus])
 
   async function load() {
     setLoading(true)
-    const { data } = await supabase.from('pipeline_segments').select('*').order('category').order('from_loc')
+    const { data, error } = await supabase.from('pipeline_segments').select('*').order('category').order('from_loc')
+    if (error) { toast('Gagal memuat data: ' + error.message, 'error'); setLoading(false); return }
     setRows(data || [])
     setLoading(false)
   }
@@ -43,6 +68,7 @@ export default function Monitoring() {
     const matchS = filterStatus === 'ALL' || r.integrity_status === filterStatus
     return matchQ && matchS
   })
+  const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   const f = (k, v) => setForm(p => ({ ...p, [k]: v }))
   function openAdd()  { setForm(EMPTY); setModal('add') }
@@ -50,46 +76,78 @@ export default function Monitoring() {
 
   async function save() {
     setSaving(true)
-    const payload = { ...form }
-    ;['size_inch','length_m','year_built','corrosion_rate','remain_life','design_pressure','leak_event']
-      .forEach(k => { payload[k] = payload[k] === '' ? null : Number(payload[k]) })
-    delete payload.id; delete payload.created_at; delete payload.updated_at; delete payload.no
+    try {
+      const payload = { ...form }
+      ;['size_inch','length_m','year_built','corrosion_rate','remain_life','design_pressure','leak_event']
+        .forEach(k => { payload[k] = payload[k] === '' ? null : Number(payload[k]) })
+      delete payload.id; delete payload.created_at; delete payload.updated_at; delete payload.no
 
-    if (modal === 'add') {
-      await supabase.from('pipeline_segments').insert(payload)
-    } else {
-      await supabase.from('pipeline_segments').update(payload).eq('id', modal.id)
+      const { error } = modal === 'add'
+        ? await supabase.from('pipeline_segments').insert(payload)
+        : await supabase.from('pipeline_segments').update(payload).eq('id', modal.id)
+      if (error) throw error
+
+      toast(modal === 'add' ? 'Segmen berhasil ditambahkan' : 'Segmen berhasil diupdate')
+      await load()
+      setModal(null)
+    } catch (err) {
+      toast('Gagal menyimpan: ' + err.message, 'error')
+    } finally {
+      setSaving(false)
     }
-    await load()
-    setModal(null)
-    setSaving(false)
   }
 
   async function del(id) {
     if (!confirm('Hapus segmen ini?')) return
-    await supabase.from('pipeline_segments').delete().eq('id', id)
+    const { error } = await supabase.from('pipeline_segments').delete().eq('id', id)
+    if (error) { toast('Gagal hapus: ' + error.message, 'error'); return }
     setRows(r => r.filter(x => x.id !== id))
+    toast('Segmen dihapus')
+  }
+
+  function doExport() {
+    const ws = XLSX.utils.json_to_sheet(rows.map(r => ({
+      Kategori: r.category, Dari: r.from_loc, Ke: r.to_loc,
+      'Size (in)': r.size_inch, 'Panjang (m)': r.length_m, Fluid: r.service_fluid,
+      Tahun: r.year_built, 'Design Press.': r.design_pressure,
+      'Corr. Rate': r.corrosion_rate, 'Remain Life': r.remain_life,
+      'Leak Event': r.leak_event, Integrity: r.integrity_status,
+      Memo: r.memo_inspeksi, 'Tindak Lanjut': r.tindak_lanjut,
+    })))
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Monitoring')
+    XLSX.writeFile(wb, `Monitoring_Inspeksi_${new Date().toISOString().slice(0,10)}.xlsx`)
   }
 
   const inp = 'w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500'
   const lbl = 'text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1'
-
-  const counts = { BAD: rows.filter(r => r.integrity_status === 'BAD').length, MONITOR: rows.filter(r => r.integrity_status === 'MONITOR').length, GOOD: rows.filter(r => r.integrity_status === 'GOOD').length }
+  const counts = {
+    BAD:     rows.filter(r => r.integrity_status === 'BAD').length,
+    MONITOR: rows.filter(r => r.integrity_status === 'MONITOR').length,
+    GOOD:    rows.filter(r => r.integrity_status === 'GOOD').length,
+  }
 
   return (
     <div className="space-y-4 max-w-6xl">
+      <Toast toasts={toasts} />
+
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-white">Monitoring Inspeksi</h1>
           <p className="text-slate-400 text-sm">{rows.length} segmen pipa</p>
         </div>
-        <button onClick={openAdd}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
-          <Plus className="w-4 h-4" /> Tambah Segmen
-        </button>
+        <div className="flex gap-2">
+          <button onClick={doExport}
+            className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+            <Download className="w-4 h-4" /> Export
+          </button>
+          <button onClick={openAdd}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+            <Plus className="w-4 h-4" /> Tambah Segmen
+          </button>
+        </div>
       </div>
 
-      {/* Filter status */}
       <div className="flex items-center gap-2 flex-wrap">
         {[['ALL','Semua','text-slate-400'],['BAD','BAD','text-red-400'],['MONITOR','MONITOR','text-yellow-400'],['GOOD','GOOD','text-green-400']].map(([v,l,c]) => (
           <button key={v} onClick={() => setFilterStatus(v)}
@@ -119,9 +177,9 @@ export default function Monitoring() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0
+                  {paged.length === 0
                     ? <tr><td colSpan={13} className="text-center py-12 text-slate-500">Belum ada data</td></tr>
-                    : filtered.map(r => (
+                    : paged.map(r => (
                       <tr key={r.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
                         <td className="px-3 py-3 font-semibold text-white whitespace-nowrap">{r.category || '—'}</td>
                         <td className="px-3 py-3 text-slate-300 whitespace-nowrap">{r.from_loc || '—'}</td>
@@ -147,10 +205,10 @@ export default function Monitoring() {
                 </tbody>
               </table>
             </div>
+            <Pager page={page} total={filtered.length} onChange={setPage} />
           </div>
       }
 
-      {/* Modal */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/60 overflow-y-auto">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl my-4">
@@ -177,7 +235,10 @@ export default function Monitoring() {
                 <label className={lbl}>Ke</label>
                 <input value={form.to_loc || ''} onChange={e => f('to_loc', e.target.value)} className={inp} />
               </div>
-              {[['Size (inch)','size_inch'],['Panjang (m)','length_m'],['Tahun Dibangun','year_built'],['ANSI Rating','ansi_rating'],['Design Pressure','design_pressure'],['Corrosion Rate','corrosion_rate'],['Remain Life','remain_life'],['Leak Event','leak_event']].map(([l,k]) => (
+              {[['Size (inch)','size_inch'],['Panjang (m)','length_m'],['Tahun Dibangun','year_built'],
+                ['ANSI Rating','ansi_rating'],['Design Pressure','design_pressure'],
+                ['Corrosion Rate','corrosion_rate'],['Remain Life','remain_life'],['Leak Event','leak_event']
+              ].map(([l,k]) => (
                 <div key={k}>
                   <label className={lbl}>{l}</label>
                   <input type="number" value={form[k] ?? ''} onChange={e => f(k, e.target.value)} className={inp} />

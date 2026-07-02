@@ -23,7 +23,7 @@ const PAGES = {
 }
 
 export default function App() {
-  const { user, loading, signIn, signOut } = useAuth()
+  const { user, profile, loading, signIn, signOut } = useAuth()
   const [page, setPage] = useState('dashboard')
 
   if (loading) {
@@ -39,7 +39,7 @@ export default function App() {
   const Page = PAGES[page] || Dashboard
 
   return (
-    <Layout page={page} onNav={setPage} onSignOut={signOut}>
+    <Layout page={page} onNav={setPage} onSignOut={signOut} profile={profile}>
       <Page />
     </Layout>
   )

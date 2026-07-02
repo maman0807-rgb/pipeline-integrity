@@ -1,22 +1,34 @@
 import { useState } from 'react'
 import {
   LayoutDashboard, GitBranch, Activity, Flame,
-  Calculator, Grid3x3, LogOut, Menu, X, Droplets, Upload, Users
+  Calculator, Grid3x3, LogOut, Menu, X, Droplets, Upload, Users, ShieldCheck
 } from 'lucide-react'
 
 const NAV = [
-  { id: 'dashboard',  label: 'Dashboard',          icon: LayoutDashboard },
-  { id: 'flowline',   label: 'Flowline Register',   icon: GitBranch },
-  { id: 'monitoring', label: 'Monitoring Inspeksi', icon: Activity },
-  { id: 'kebocoran',  label: 'History Kebocoran',   icon: Flame },
-  { id: 'cba',        label: 'CBA Kalkulator',      icon: Calculator },
-  { id: 'matrix',     label: 'Decision Matrix',     icon: Grid3x3 },
-  { id: 'users',      label: 'Manajemen User',      icon: Users },
-  { id: 'import',     label: 'Import Excel',        icon: Upload },
+  { id: 'dashboard',  label: 'Dashboard',          icon: LayoutDashboard, adminOnly: false },
+  { id: 'flowline',   label: 'Flowline Register',   icon: GitBranch,       adminOnly: false },
+  { id: 'monitoring', label: 'Monitoring Inspeksi', icon: Activity,        adminOnly: false },
+  { id: 'kebocoran',  label: 'History Kebocoran',   icon: Flame,           adminOnly: false },
+  { id: 'cba',        label: 'CBA Kalkulator',      icon: Calculator,      adminOnly: false },
+  { id: 'matrix',     label: 'Decision Matrix',     icon: Grid3x3,         adminOnly: false },
+  { id: 'users',      label: 'Manajemen User',      icon: Users,           adminOnly: true  },
+  { id: 'import',     label: 'Import Excel',        icon: Upload,          adminOnly: true  },
 ]
 
-export default function Layout({ page, onNav, onSignOut, children }) {
+const ROLE_LABEL = {
+  admin:      { label: 'Admin',       color: '#f87171' },
+  inspektor:  { label: 'Inspektor',   color: '#60a5fa' },
+  sr_mekanik: { label: 'Sr. Mekanik', color: '#a78bfa' },
+  mekanik:    { label: 'Mekanik',     color: '#34d399' },
+  viewer:     { label: 'Viewer',      color: '#94a3b8' },
+}
+
+export default function Layout({ page, onNav, onSignOut, profile, children }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  const isAdmin  = profile?.role === 'admin'
+  const visibleNav = NAV.filter(n => !n.adminOnly || isAdmin)
+  const roleInfo = ROLE_LABEL[profile?.role] || { label: profile?.role || '—', color: '#94a3b8' }
 
   const Sidebar = () => (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
@@ -30,9 +42,10 @@ export default function Layout({ page, onNav, onSignOut, children }) {
           <p style={{ fontSize: 14, fontWeight: 700, color: 'white' }}>Pipeline Integrity</p>
         </div>
       </div>
+
       {/* Nav */}
       <nav style={{ flex: 1, padding: '16px 12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {NAV.map(({ id, label, icon: Icon }) => (
+        {visibleNav.map(({ id, label, icon: Icon }) => (
           <button key={id}
             onClick={() => { onNav(id); setMobileOpen(false) }}
             style={{
@@ -50,8 +63,21 @@ export default function Layout({ page, onNav, onSignOut, children }) {
           </button>
         ))}
       </nav>
+
+      {/* User info */}
+      <div style={{ margin: '0 12px 8px', background: '#1e293b', borderRadius: 12, padding: '10px 14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <ShieldCheck style={{ width: 14, height: 14, color: roleInfo.color, flexShrink: 0 }} />
+          <span style={{ fontSize: 11, fontWeight: 700, color: roleInfo.color, textTransform: 'uppercase', letterSpacing: 1 }}>{roleInfo.label}</span>
+        </div>
+        <p style={{ fontSize: 13, fontWeight: 600, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {profile?.nama || profile?.username || '—'}
+        </p>
+        {profile?.nip && <p style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>NIP: {profile.nip}</p>}
+      </div>
+
       {/* Logout */}
-      <div style={{ padding: '12px 12px 20px', borderTop: '1px solid #1e293b' }}>
+      <div style={{ padding: '0 12px 20px', borderTop: '1px solid #1e293b', paddingTop: 8 }}>
         <button onClick={onSignOut}
           style={{
             display: 'flex', alignItems: 'center', gap: 12,
