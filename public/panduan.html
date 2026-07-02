@@ -228,8 +228,9 @@
   <a class="nav-item" href="#kebocoran">4. History Kebocoran</a>
   <a class="nav-item" href="#matrix">5. Decision Matrix</a>
   <a class="nav-item" href="#cba">6. CBA Kalkulator</a>
-  <a class="nav-item" href="#users">7. Manajemen User</a>
-  <a class="nav-item" href="#import">8. Import Excel</a>
+  <a class="nav-item" href="#gudang">7. Stok Gudang</a>
+  <a class="nav-item" href="#users">8. Manajemen User</a>
+  <a class="nav-item" href="#import">9. Import Excel</a>
   <div class="nav-section">Lainnya</div>
   <a class="nav-item" href="#update">Notifikasi Update</a>
   <a class="nav-item" href="#roles">Hak Akses Role</a>
@@ -506,9 +507,65 @@
     </div>
   </section>
 
+  <!-- Stok Gudang -->
+  <section id="gudang">
+    <h2>📦 7. Stok Gudang</h2>
+    <p>Manajemen stok material dan spare part yang tersimpan di gudang lapangan — mulai dari pipe fittings, valve, gasket, chemical, hingga tools. Semua role bisa mengakses modul ini.</p>
+
+    <h3>Data yang dikelola</h3>
+    <div class="card">
+      <table>
+        <thead><tr><th>Field</th><th>Keterangan</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Part Number</strong></td><td>Kode unik material (wajib diisi)</td></tr>
+          <tr><td><strong>Deskripsi</strong></td><td>Nama atau keterangan material</td></tr>
+          <tr><td><strong>Kategori</strong></td><td>Pipe Fittings / Valve & Actuator / Gasket & Seal / Chemical / Tools & Equipment / Consumable / Spare Part / Safety Equipment</td></tr>
+          <tr><td><strong>Stok & Satuan</strong></td><td>Jumlah stok saat ini dan satuannya (Pcs, Btg, Liter, dll)</td></tr>
+          <tr><td><strong>Safety Stock</strong></td><td>Batas minimum stok — di bawah nilai ini muncul status <span class="badge badge-yellow">Menipis</span></td></tr>
+          <tr><td><strong>Harga Satuan</strong></td><td>Harga per unit (Rp)</td></tr>
+          <tr><td><strong>Penyimpanan</strong></td><td>Lokasi rak / gudang tempat material disimpan</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Status stok</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+      <span class="badge badge-green" style="padding:6px 16px">Tersedia — stok di atas safety stock</span>
+      <span class="badge badge-yellow" style="padding:6px 16px">Menipis — stok ≤ safety stock</span>
+      <span class="badge badge-red" style="padding:6px 16px">Habis — stok = 0</span>
+    </div>
+
+    <h3>Tab Stok Material — cara menggunakan</h3>
+    <ol class="steps">
+      <li><span>Klik <strong>+ Tambah Material</strong> untuk input part baru secara manual</span></li>
+      <li><span>Atau klik <strong>Import</strong> untuk upload banyak part sekaligus dari file Excel (.xlsx) — gunakan <strong>Template</strong> sebagai panduan format kolom</span></li>
+      <li><span>Klik ikon <strong>↑ panah biru</strong> pada baris material untuk mencatat <strong>stok masuk atau keluar</strong></span></li>
+      <li><span>Gunakan filter <strong>Semua / Tersedia / Menipis / Habis</strong> dan filter <strong>Kategori</strong> untuk menyaring tampilan</span></li>
+      <li><span>Klik <strong>Export</strong> untuk download data stok saat ini ke Excel</span></li>
+    </ol>
+
+    <div class="alert alert-yellow">
+      <span class="alert-icon">⚠️</span>
+      <span>Banner peringatan <strong>"X material stok habis / menipis"</strong> muncul otomatis di bagian atas halaman jika ada stok yang perlu diperhatikan.</span>
+    </div>
+
+    <h3>Tab Riwayat Transaksi — cara menggunakan</h3>
+    <ol class="steps">
+      <li><span>Buka tab <strong>Riwayat Transaksi</strong> untuk melihat seluruh history pergerakan stok</span></li>
+      <li><span>Klik <strong>+ Catat Transaksi</strong> untuk input transaksi masuk/keluar tanpa harus ke tab Stok Material</span></li>
+      <li><span>Cari part menggunakan kotak pencarian — ketik part number atau deskripsi</span></li>
+      <li><span>Filter berdasarkan tipe: <strong>Semua / Masuk / Keluar</strong></span></li>
+    </ol>
+
+    <div class="alert alert-blue">
+      <span class="alert-icon">💡</span>
+      <span>Setiap kali stok masuk atau keluar dicatat, kolom <strong>Stok</strong> di tabel material diperbarui otomatis dan history transaksi tersimpan permanen di database.</span>
+    </div>
+  </section>
+
   <!-- Users -->
   <section id="users">
-    <h2>👥 7. Manajemen User <span style="font-size:12px;font-weight:500;color:#94a3b8">(Admin only)</span></h2>
+    <h2>👥 8. Manajemen User <span style="font-size:12px;font-weight:500;color:#94a3b8">(Admin only)</span></h2>
     <p>Mengelola akun pengguna sistem. Hanya bisa diakses oleh role Admin.</p>
 
     <h3>Cara tambah user baru</h3>
@@ -522,7 +579,7 @@
 
   <!-- Import -->
   <section id="import">
-    <h2>📥 8. Import Excel <span style="font-size:12px;font-weight:500;color:#94a3b8">(Admin only)</span></h2>
+    <h2>📥 9. Import Excel <span style="font-size:12px;font-weight:500;color:#94a3b8">(Admin only)</span></h2>
     <p>Upload data massal dari file Excel ke database. Berguna untuk migrasi data awal atau penambahan data dalam jumlah besar.</p>
 
     <h3>Format file Excel</h3>
@@ -573,6 +630,7 @@
             <th>Kebocoran</th>
             <th>Matrix</th>
             <th>CBA</th>
+            <th>Stok Gudang</th>
             <th>User Mgmt</th>
             <th>Import</th>
           </tr>
@@ -580,23 +638,23 @@
         <tbody>
           <tr>
             <td><span class="badge badge-red">Admin</span></td>
-            <td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+            <td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
           </tr>
           <tr>
             <td><span class="badge badge-blue">Inspektor</span></td>
-            <td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>—</td><td>—</td>
+            <td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>—</td><td>—</td>
           </tr>
           <tr>
             <td><span style="display:inline-flex;align-items:center;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;background:rgba(167,139,250,.15);color:#a78bfa;border:1px solid rgba(167,139,250,.3)">Sr. Mekanik</span></td>
-            <td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>—</td><td>—</td>
+            <td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>—</td><td>—</td>
           </tr>
           <tr>
             <td><span class="badge badge-green">Mekanik</span></td>
-            <td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>—</td><td>—</td>
+            <td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>—</td><td>—</td>
           </tr>
           <tr>
             <td><span class="badge badge-gray">Viewer</span></td>
-            <td>✅</td><td>👁️</td><td>👁️</td><td>👁️</td><td>✅</td><td>✅</td><td>—</td><td>—</td>
+            <td>✅</td><td>👁️</td><td>👁️</td><td>👁️</td><td>✅</td><td>✅</td><td>👁️</td><td>—</td><td>—</td>
           </tr>
         </tbody>
       </table>
