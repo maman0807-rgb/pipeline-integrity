@@ -11,7 +11,8 @@ export default function LoginPage({ onLogin }) {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const email = `${username.trim().toLowerCase()}@eramcore.internal`
+    const raw = username.trim()
+    const email = raw.includes('@') ? raw : `${raw.toLowerCase()}@eramcore.internal`
     const { error: err } = await onLogin(email, password)
     if (err) setError('Username atau password salah')
     setLoading(false)
@@ -38,7 +39,7 @@ export default function LoginPage({ onLogin }) {
               <input
                 type="text" value={username} onChange={e => setUsername(e.target.value)}
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                placeholder="contoh: budi_santoso" required autoComplete="username"
+                placeholder="username atau email lengkap" required autoComplete="username"
               />
             </div>
           </div>
