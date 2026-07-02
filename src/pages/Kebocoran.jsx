@@ -257,7 +257,11 @@ export default function Kebocoran() {
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <label className={lbl}>Segmen Pipa <span className="text-blue-400">(untuk update Decision Matrix)</span></label>
-                <select value={form.segment_id || ''} onChange={e => f('segment_id', e.target.value)} className={inp}>
+                <select value={form.segment_id || ''} onChange={e => {
+                  const seg = segs.find(s => s.id === e.target.value)
+                  f('segment_id', e.target.value)
+                  if (seg?.from_loc) f('lokasi', seg.from_loc)
+                }} className={inp}>
                   <option value="">— Pilih Segmen —</option>
                   {segs.map(s => (
                     <option key={s.id} value={s.id}>

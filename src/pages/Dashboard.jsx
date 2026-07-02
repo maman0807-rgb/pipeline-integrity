@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { AlertTriangle, CheckCircle, Activity, Droplets, GitBranch, Flame } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Activity, Droplets, GitBranch, Flame, RefreshCw } from 'lucide-react'
 
 function KpiCard({ label, value, sub, color = 'blue', icon: Icon }) {
   const colors = {
@@ -35,12 +35,19 @@ function IntegrityBadge({ status }) {
 }
 
 export default function Dashboard() {
-  const [stats, setStats] = useState(null)
-  const [alerts, setAlerts] = useState([])
+  const [stats, setStats]       = useState(null)
+  const [alerts, setAlerts]     = useState([])
   const [recentLeaks, setRecentLeaks] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading]   = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => { load() }, [])
+
+  async function refresh() {
+    setRefreshing(true)
+    await load()
+    setRefreshing(false)
+  }
 
   async function load() {
     const today = new Date().toISOString().slice(0, 10)
@@ -95,9 +102,16 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-slate-400 text-sm mt-1">Pipeline Integrity — Prabumulih Field</p>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+          <p className="text-slate-400 text-sm mt-1">Pipeline Integrity — Prabumulih Field</p>
+        </div>
+        <button onClick={refresh} disabled={refreshing}
+          className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
       </div>
 
       {/* KPI row 1 — jumlah */}
