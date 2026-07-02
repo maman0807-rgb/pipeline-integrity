@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Droplets, Lock, Mail } from 'lucide-react'
+import { Droplets, Lock, User } from 'lucide-react'
 
 export default function LoginPage({ onLogin }) {
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -11,8 +11,9 @@ export default function LoginPage({ onLogin }) {
     e.preventDefault()
     setError('')
     setLoading(true)
+    const email = `${username.trim().toLowerCase()}@eramcore.internal`
     const { error: err } = await onLogin(email, password)
-    if (err) setError(err.message)
+    if (err) setError('Username atau password salah')
     setLoading(false)
   }
 
@@ -31,13 +32,13 @@ export default function LoginPage({ onLogin }) {
 
         <form onSubmit={handleSubmit} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
           <div>
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">Email</label>
+            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">Username</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
-                type="email" value={email} onChange={e => setEmail(e.target.value)}
+                type="text" value={username} onChange={e => setUsername(e.target.value)}
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                placeholder="email@pertamina.com" required
+                placeholder="contoh: budi_santoso" required autoComplete="username"
               />
             </div>
           </div>
