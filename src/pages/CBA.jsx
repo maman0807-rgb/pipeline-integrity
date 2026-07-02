@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Calculator, Database, RefreshCw } from 'lucide-react'
+import { Calculator, Database, RefreshCw, Info } from 'lucide-react'
 
 const DEF_ECO = {
   oilRate: 300, oilPrice: 78, gasRate: 0.75, gasPrice: 6.5, ghv: 1050, usdIdr: 16300,
@@ -42,62 +42,63 @@ function compute(f, isOil) {
   return { totalAnnualLoss, totalCapex, npv, payback, rows, crewDays: Math.round(crewDays) }
 }
 
-const rp = v => 'Rp ' + (v / 1e6).toFixed(1) + ' jt'
+const rp = v => {
+  const abs = Math.abs(v)
+  if (abs >= 1e12) return 'Rp ' + (v / 1e12).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' T'
+  if (abs >= 1e9)  return 'Rp ' + (v / 1e9).toLocaleString('id-ID',  { maximumFractionDigits: 2 }) + ' M'
+  return 'Rp ' + (v / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' jt'
+}
 
 export default function CBA() {
-  const [pipes, setPipes]       = useState([])
-  const [segs, setSegs]         = useState([])
-  const [selPipe, setSelPipe]   = useState('')
-  const [selSeg, setSelSeg]     = useState('')
+  const [segs, setSegs]           = useState([])
+  const [selSeg, setSelSeg]       = useState('')
   const [loadingDB, setLoadingDB] = useState(false)
-  const [tech, setTech]         = useState(DEF_TECH)
-  const [eco, setEco]           = useState(DEF_ECO)
-  const [isOil, setIsOil]       = useState(true)
-  const [result, setResult]     = useState(null)
+  const [tech, setTech]           = useState(DEF_TECH)
+  const [eco, setEco]             = useState(DEF_ECO)
+  const [isOil, setIsOil]         = useState(true)
+  const [result, setResult]       = useState(null)
+  const [segInfo, setSegInfo]     = useState(null)
 
   useEffect(() => {
-    Promise.all([
-      supabase.from('pipelines').select('id,dari_sumur,ke_stasiun,panjang_m,tahun_konstruksi').order('dari_sumur'),
-      supabase.from('pipeline_segments').select('id,from_loc,to_loc,category,size_inch,service_fluid,corrosion_rate,remain_life').order('from_loc'),
-    ]).then(([{ data: p }, { data: s }]) => {
-      setPipes(p || [])
-      setSegs(s || [])
-    })
+    supabase.from('pipeline_segments')
+      .select('id,from_loc,to_loc,category,size_inch,service_fluid,corrosion_rate,remain_life,leak_event,year_built,length_m')
+      .order('category').order('from_loc')
+      .then(({ data }) => setSegs(data || []))
   }, [])
 
   async function autoFill() {
-    if (!selPipe) return
+    if (!selSeg) return
     setLoadingDB(true)
-    const pipe = pipes.find(p => p.id === selPipe)
-    const seg  = segs.find(s => s.id === selSeg)
+    const seg = segs.find(s => s.id === selSeg)
+    if (!seg) { setLoadingDB(false); return }
 
-    // Hitung frekuensi bocor dari leak_events
-    const { count: leakCount } = await supabase
-      .from('leak_events').select('*', { count: 'exact', head: true })
-      .eq('pipeline_id', selPipe)
+    const yearNow = new Date().getFullYear()
+    const umur    = seg.year_built ? yearNow - seg.year_built : DEF_TECH.pipeAge
+    const leakFreq = umur > 0
+      ? +((seg.leak_event || 0) / umur).toFixed(1)
+      : (seg.leak_event || 0)
 
-    const yearNow  = new Date().getFullYear()
-    const tahun    = pipe?.tahun_konstruksi || yearNow - 10
-    const umur     = yearNow - tahun
-    const leakFreq = umur > 0 ? +((leakCount || 0) / umur).toFixed(1) : (leakCount || 0)
-
-    // Auto-detect oil/gas dari service_fluid segmen
-    const fluid = (seg?.service_fluid || '').toUpperCase()
-    if (fluid.includes('GAS')) setIsOil(false)
-    else setIsOil(true)
+    const fluid = (seg.service_fluid || '').toUpperCase()
+    setIsOil(!fluid.includes('GAS'))
 
     setTech({
-      pipeId:        pipe ? `${pipe.dari_sumur}${pipe.ke_stasiun ? ' → ' + pipe.ke_stasiun : ''}` : '',
-      diameter:      seg?.size_inch       || DEF_TECH.diameter,
-      totalLength:   pipe?.panjang_m      || DEF_TECH.totalLength,
-      replaceLength: Math.round((pipe?.panjang_m || DEF_TECH.totalLength) * 0.3),
+      pipeId:        `[${seg.category || '—'}] ${seg.from_loc || '—'} → ${seg.to_loc || '—'}`,
+      diameter:      seg.size_inch  || DEF_TECH.diameter,
+      totalLength:   seg.length_m   || DEF_TECH.totalLength,
+      replaceLength: Math.round((seg.length_m || DEF_TECH.totalLength) * 0.3),
       pipeAge:       umur,
       leakFreq:      leakFreq,
     })
     setEco(e => ({
       ...e,
-      degradRate: seg?.corrosion_rate ? +(seg.corrosion_rate * 2).toFixed(1) : e.degradRate,
+      degradRate: seg.corrosion_rate ? +(seg.corrosion_rate * 2).toFixed(1) : e.degradRate,
     }))
+    setSegInfo({
+      fluid:       seg.service_fluid || '—',
+      remainLife:  seg.remain_life   || '—',
+      leakTotal:   seg.leak_event    || 0,
+      corrRate:    seg.corrosion_rate || '—',
+    })
     setResult(null)
     setLoadingDB(false)
   }
@@ -154,36 +155,53 @@ export default function CBA() {
         <div className="flex items-center gap-2 mb-1">
           <Database className="w-4 h-4 text-blue-400" />
           <h2 className="text-sm font-bold text-blue-300 uppercase tracking-wider">Auto-fill dari Database</h2>
+          <span className="text-xs text-slate-500">— pilih segmen, data teknis terisi otomatis</span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className={lbl}>Pilih Flowline</label>
-            <select value={selPipe} onChange={e => { setSelPipe(e.target.value); setSelSeg('') }} className={inp}>
-              <option value="">— Pilih Flowline —</option>
-              {pipes.map(p => (
-                <option key={p.id} value={p.id}>
-                  {p.dari_sumur}{p.ke_stasiun ? ` → ${p.ke_stasiun}` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className={lbl}>Pilih Segmen (untuk ukuran & fluida)</label>
-            <select value={selSeg} onChange={e => setSelSeg(e.target.value)} className={inp} disabled={!selPipe}>
-              <option value="">— Pilih Segmen (opsional) —</option>
-              {segs.map(s => (
-                <option key={s.id} value={s.id}>
-                  [{s.category || '—'}] {s.from_loc || '—'} → {s.to_loc || '—'}
-                  {s.size_inch ? ` (${s.size_inch}")` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
+
+        <div>
+          <label className={lbl}>Pilih Segmen Pipa</label>
+          <select value={selSeg} onChange={e => { setSelSeg(e.target.value); setResult(null) }} className={inp}>
+            <option value="">— Pilih segmen —</option>
+            {segs.map(s => (
+              <option key={s.id} value={s.id}>
+                [{s.category || '—'}] {s.from_loc || '—'} → {s.to_loc || '—'}
+                {s.size_inch ? ` · ${s.size_inch}"` : ''}
+                {s.service_fluid ? ` · ${s.service_fluid}` : ''}
+                {s.leak_event ? ` · ${s.leak_event}× bocor` : ''}
+              </option>
+            ))}
+          </select>
         </div>
-        <button onClick={autoFill} disabled={!selPipe || loadingDB}
+
+        {/* Ringkasan data segmen terpilih */}
+        {selSeg && (() => {
+          const seg = segs.find(s => s.id === selSeg)
+          if (!seg) return null
+          return (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                ['Fluida',         seg.service_fluid   || '—'],
+                ['Diameter',       seg.size_inch       ? `${seg.size_inch}"` : '—'],
+                ['Panjang',        seg.length_m        ? `${seg.length_m} m` : '—'],
+                ['Year Built',     seg.year_built      || '—'],
+                ['Corrosion Rate', seg.corrosion_rate  ? `${seg.corrosion_rate} mm/thn` : '—'],
+                ['Remain Life',    seg.remain_life     ? `${seg.remain_life} thn` : '—'],
+                ['Total Bocor',    `${seg.leak_event || 0}×`],
+                ['Status',         seg.integrity_status || '—'],
+              ].map(([l, v]) => (
+                <div key={l} className="bg-slate-800/60 rounded-lg px-3 py-2 text-xs">
+                  <p className="text-slate-500 uppercase tracking-wider mb-0.5">{l}</p>
+                  <p className="text-blue-200 font-semibold">{v}</p>
+                </div>
+              ))}
+            </div>
+          )
+        })()}
+
+        <button onClick={autoFill} disabled={!selSeg || loadingDB}
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-sm font-semibold px-4 py-2 rounded-xl">
           <RefreshCw className={`w-4 h-4 ${loadingDB ? 'animate-spin' : ''}`} />
-          {loadingDB ? 'Mengambil data...' : 'Ambil Data dari DB'}
+          {loadingDB ? 'Mengambil data...' : 'Isi Otomatis dari Segmen Ini'}
         </button>
       </div>
 
