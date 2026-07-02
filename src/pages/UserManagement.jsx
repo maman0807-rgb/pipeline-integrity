@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Users, Copy, Check, RefreshCw } from 'lucide-react'
+import { Users, Copy, Check, RefreshCw, Eye, EyeOff, Shuffle } from 'lucide-react'
 
 const ROLES = ['admin','mekanik','sr_mekanik','inspektor','viewer']
+
+function genPassword() {
+  const chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$'
+  return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+}
 
 export default function UserManagement() {
   const [users, setUsers]     = useState([])
   const [loading, setLoading] = useState(true)
-  const [form, setForm]       = useState({ username: '', nama: '', nip: '', role: 'viewer' })
+  const [form, setForm]       = useState({ username: '', nama: '', nip: '', role: 'viewer', password: '' })
+  const [showPass, setShowPass] = useState(false)
   const [sql, setSql]         = useState('')
   const [copied, setCopied]   = useState(false)
 
@@ -25,10 +31,10 @@ export default function UserManagement() {
   const f = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
   function generate() {
-    const { username, nama, nip, role } = form
-    if (!username || !nama) return
+    const { username, nama, nip, role, password } = form
+    if (!username || !nama || !password) return
     const email = `${username.toLowerCase().replace(/\s+/g,'_')}@eramcore.internal`
-    const pass  = `${username.charAt(0).toUpperCase()}${username.slice(1)}@2024`
+    const pass  = password
     const generatedSql = `-- Jalankan di Supabase SQL Editor
 -- 1. Buat auth user
 INSERT INTO auth.users (
@@ -138,8 +144,32 @@ FROM auth.users WHERE email = '${email}';`
               {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
+          <div className="col-span-2">
+            <label className={lbl}>Password</label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={e => f('password', e.target.value)}
+                  placeholder="Masukkan password atau klik Generate"
+                  className={inp + ' pr-10'}
+                />
+                <button type="button" onClick={() => setShowPass(p => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <button type="button"
+                onClick={() => { const p = genPassword(); f('password', p); setShowPass(true) }}
+                className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white text-sm px-3 py-2 rounded-xl whitespace-nowrap">
+                <Shuffle className="w-4 h-4" /> Generate
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">Min. 8 karakter. Berikan password ini ke user setelah dibuat.</p>
+          </div>
         </div>
-        <button onClick={generate} disabled={!form.username || !form.nama}
+        <button onClick={generate} disabled={!form.username || !form.nama || !form.password}
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-sm font-semibold px-5 py-2.5 rounded-xl">
           <Users className="w-4 h-4" /> Generate SQL
         </button>
@@ -164,7 +194,7 @@ FROM auth.users WHERE email = '${email}';`
             {sql}
           </pre>
           <p className="text-xs text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
-            Password default: <strong>{form.username.charAt(0).toUpperCase()}{form.username.slice(1)}@2024</strong> — minta user ganti setelah login pertama.
+            ⚠️ Simpan password ini sebelum ditutup: <strong className="font-mono text-sm">{form.password}</strong> — berikan ke user dan minta ganti setelah login pertama.
           </p>
         </div>
       )}
