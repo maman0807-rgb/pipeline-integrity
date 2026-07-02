@@ -14,7 +14,7 @@ export default function LoginPage({ onLogin }) {
     const raw = username.trim()
     const email = raw.includes('@') ? raw : `${raw.toLowerCase()}@eramcore.internal`
     const { error: err } = await onLogin(email, password)
-    if (err) setError(`[${email}] ${err.message}`)
+    if (err) setError('Username atau password salah')
     setLoading(false)
   }
 

@@ -57,7 +57,7 @@ BEGIN
       '00000000-0000-0000-0000-000000000000',
       new_uid, 'authenticated', 'authenticated', '${email}',
       crypt('${pass}', gen_salt('bf', 10)),
-      now(), '{"provider":"email","providers":["email"]}', '{}',
+      now(), '{"provider":"email","providers":["email"]}', '{"email_verified":true}',
       now(), now(), '', '', '', ''
     );
     RAISE NOTICE 'Auth user dibuat: %', new_uid;
