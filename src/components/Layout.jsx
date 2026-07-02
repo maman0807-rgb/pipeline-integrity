@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   LayoutDashboard, GitBranch, Activity, Flame,
-  Calculator, Grid3x3, LogOut, Menu, X, Droplets, Upload, Users, ShieldCheck, Package
+  Calculator, Grid3x3, LogOut, Menu, X, Droplets, Upload, Users, ShieldCheck, Package, BookOpen
 } from 'lucide-react'
 
 const NAV = [
@@ -77,8 +77,20 @@ export default function Layout({ page, onNav, onSignOut, profile, children }) {
         {profile?.nip && <p style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>NIP: {profile.nip}</p>}
       </div>
 
-      {/* Logout */}
+      {/* Panduan & Logout */}
       <div style={{ padding: '0 12px 20px', borderTop: '1px solid #1e293b', paddingTop: 8 }}>
+        <a href="/panduan.html" target="_blank" rel="noopener noreferrer"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '12px 16px', borderRadius: 12, cursor: 'pointer',
+            width: '100%', fontSize: 14, fontWeight: 500, textDecoration: 'none',
+            background: 'transparent', color: '#94a3b8',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#1e293b'; e.currentTarget.style.color = 'white' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#94a3b8' }}
+        >
+          <BookOpen style={{ width: 18, height: 18 }} /> Panduan
+        </a>
         <button onClick={onSignOut}
           style={{
             display: 'flex', alignItems: 'center', gap: 12,
