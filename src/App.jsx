@@ -11,6 +11,7 @@ import CBA from './pages/CBA'
 import Matrix from './pages/Matrix'
 import ImportExcel from './pages/ImportExcel'
 import UserManagement from './pages/UserManagement'
+import StokGudang from './pages/StokGudang'
 
 const PAGES = {
   dashboard: Dashboard,
@@ -19,6 +20,7 @@ const PAGES = {
   kebocoran: Kebocoran,
   cba: CBA,
   matrix: Matrix,
+  gudang: StokGudang,
   users: UserManagement,
   import: ImportExcel,
 }

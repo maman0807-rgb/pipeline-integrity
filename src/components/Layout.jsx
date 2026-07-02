@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   LayoutDashboard, GitBranch, Activity, Flame,
-  Calculator, Grid3x3, LogOut, Menu, X, Droplets, Upload, Users, ShieldCheck
+  Calculator, Grid3x3, LogOut, Menu, X, Droplets, Upload, Users, ShieldCheck, Package
 } from 'lucide-react'
 
 const NAV = [
@@ -11,6 +11,7 @@ const NAV = [
   { id: 'kebocoran',  label: 'History Kebocoran',   icon: Flame,           adminOnly: false },
   { id: 'cba',        label: 'CBA Kalkulator',      icon: Calculator,      adminOnly: false },
   { id: 'matrix',     label: 'Decision Matrix',     icon: Grid3x3,         adminOnly: false },
+  { id: 'gudang',     label: 'Stok Gudang',         icon: Package,         adminOnly: false },
   { id: 'users',      label: 'Manajemen User',      icon: Users,           adminOnly: true  },
   { id: 'import',     label: 'Import Excel',        icon: Upload,          adminOnly: true  },
 ]
