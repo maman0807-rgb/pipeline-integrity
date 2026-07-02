@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Users, Copy, Check, RefreshCw, Eye, EyeOff, Shuffle } from 'lucide-react'
+import { Users, Copy, Check, RefreshCw, Eye, EyeOff, Shuffle, Trash2, X } from 'lucide-react'
 
 const ROLES = ['admin','mekanik','sr_mekanik','inspektor','viewer']
 
@@ -10,12 +10,15 @@ function genPassword() {
 }
 
 export default function UserManagement() {
-  const [users, setUsers]     = useState([])
-  const [loading, setLoading] = useState(true)
-  const [form, setForm]       = useState({ username: '', nama: '', nip: '', role: 'viewer', password: '' })
+  const [users, setUsers]       = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [form, setForm]         = useState({ username: '', nama: '', nip: '', role: 'viewer', password: '' })
   const [showPass, setShowPass] = useState(false)
-  const [sql, setSql]         = useState('')
-  const [copied, setCopied]   = useState(false)
+  const [sql, setSql]           = useState('')
+  const [copied, setCopied]     = useState(false)
+  const [delTarget, setDelTarget] = useState(null)
+  const [deleting, setDeleting]   = useState(false)
+  const [delSql, setDelSql]       = useState('')
 
   useEffect(() => { load() }, [])
 
@@ -54,6 +57,19 @@ FROM auth.users WHERE email = '${email}';`
     setSql(generatedSql)
   }
 
+  async function handleDelete() {
+    if (!delTarget) return
+    setDeleting(true)
+    const { error } = await supabase.from('users').delete().eq('id', delTarget.id)
+    if (!error) {
+      const email = `${delTarget.username}@eramcore.internal`
+      setDelSql(`-- Hapus auth user (jalankan di Supabase SQL Editor)\nDELETE FROM auth.users WHERE email = '${email}';`)
+      setUsers(u => u.filter(x => x.id !== delTarget.id))
+      setDelTarget(null)
+    }
+    setDeleting(false)
+  }
+
   async function copySQL() {
     await navigator.clipboard.writeText(sql)
     setCopied(true)
@@ -83,7 +99,7 @@ FROM auth.users WHERE email = '${email}';`
           : <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-800">
-                  {['Nama','Username','NIP','Role','Status'].map(h => (
+                  {['Nama','Username','NIP','Role','Status',''].map(h => (
                     <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -105,6 +121,12 @@ FROM auth.users WHERE email = '${email}';`
                         <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${u.aktif ? 'bg-green-500/20 text-green-400' : 'bg-slate-700 text-slate-400'}`}>
                           {u.aktif ? 'Aktif' : 'Nonaktif'}
                         </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <button onClick={() => setDelTarget(u)}
+                          className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-500 hover:text-red-400 transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -196,6 +218,53 @@ FROM auth.users WHERE email = '${email}';`
           <p className="text-xs text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
             ⚠️ Simpan password ini sebelum ditutup: <strong className="font-mono text-sm">{form.password}</strong> — berikan ke user dan minta ganti setelah login pertama.
           </p>
+        </div>
+      )}
+
+      {/* SQL hapus auth.users */}
+      {delSql && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-bold text-white">Selesaikan Penghapusan User</h2>
+              <p className="text-xs text-slate-400 mt-0.5">Data di tabel <code>users</code> sudah dihapus. Jalankan SQL ini untuk hapus dari <code>auth.users</code>.</p>
+            </div>
+            <button onClick={() => setDelSql('')} className="text-slate-400 hover:text-white"><X className="w-4 h-4" /></button>
+          </div>
+          <pre className="bg-slate-950 rounded-xl p-4 text-xs text-red-300 font-mono overflow-x-auto whitespace-pre-wrap border border-slate-800">
+            {delSql}
+          </pre>
+        </div>
+      )}
+
+      {/* Modal konfirmasi hapus */}
+      {delTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-sm space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white">Hapus User?</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Tindakan ini tidak bisa dibatalkan.</p>
+              </div>
+            </div>
+            <div className="bg-slate-800 rounded-xl p-3 text-sm space-y-1">
+              <p className="text-white font-semibold">{delTarget.nama}</p>
+              <p className="text-slate-400 font-mono text-xs">{delTarget.username}@eramcore.internal</p>
+              <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400">{delTarget.role}</span>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setDelTarget(null)} className="flex-1 py-2.5 border border-slate-700 rounded-xl text-sm text-slate-300 hover:bg-slate-800">
+                Batal
+              </button>
+              <button onClick={handleDelete} disabled={deleting}
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white rounded-xl text-sm font-semibold">
+                {deleting ? 'Menghapus...' : 'Ya, Hapus'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
