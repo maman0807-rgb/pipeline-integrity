@@ -12,7 +12,7 @@ const EMPTY = {
   mulai_perbaikan: '', selesai_perbaikan: '', bocor_titik: 0,
   clamp_titik: 0, sadel_titik: 0, sisip_meter: 0,
   lokasi: '', kp: '', struktur: '', distrik: '',
-  dimensi_pipa: '', panjang_pipa: '', keterangan: '', pipeline_id: '',
+  dimensi_pipa: '', panjang_pipa: '', keterangan: '', pipeline_id: '', segment_id: '',
 }
 
 function Pager({ page, total, onChange }) {
@@ -34,8 +34,10 @@ function Pager({ page, total, onChange }) {
 export default function Kebocoran() {
   const [rows, setRows]       = useState([])
   const [total, setTotal]     = useState(0)
+  const [summary, setSummary] = useState({ bocor: 0, clamp: 0, sadel: 0, sisip: 0 })
   const [page, setPage]       = useState(0)
   const [pipes, setPipes]     = useState([])
+  const [segs, setSegs]       = useState([])
   const [q, setQ]             = useState('')
   const [modal, setModal]     = useState(null)
   const [form, setForm]       = useState(EMPTY)
@@ -45,19 +47,36 @@ export default function Kebocoran() {
 
   useEffect(() => {
     loadPipes()
-    loadSummary()
   }, [])
 
-  useEffect(() => { loadPage() }, [page, q])
+  useEffect(() => {
+    loadPage()
+    loadAggregate()
+  }, [page, q])
 
   async function loadPipes() {
-    const { data } = await supabase.from('pipelines').select('id,dari_sumur,ke_stasiun').order('dari_sumur')
-    setPipes(data || [])
+    const [{ data: p }, { data: s }] = await Promise.all([
+      supabase.from('pipelines').select('id,dari_sumur,ke_stasiun').order('dari_sumur'),
+      supabase.from('pipeline_segments').select('id,from_loc,to_loc,category').order('from_loc'),
+    ])
+    setPipes(p || [])
+    setSegs(s || [])
   }
 
-  async function loadSummary() {
-    const { count } = await supabase.from('leak_events').select('*', { count: 'exact', head: true })
-    setTotal(count || 0)
+  async function loadAggregate() {
+    let query = supabase.from('leak_events')
+      .select('bocor_titik,clamp_titik,sadel_titik,sisip_meter')
+    if (q) {
+      query = query.or(`lokasi.ilike.%${q}%,distrik.ilike.%${q}%,struktur.ilike.%${q}%,deskripsi_pipa.ilike.%${q}%`)
+    }
+    const { data } = await query
+    const d = data || []
+    setSummary({
+      bocor: d.reduce((s, r) => s + (r.bocor_titik || 0), 0),
+      clamp: d.reduce((s, r) => s + (r.clamp_titik || 0), 0),
+      sadel: d.reduce((s, r) => s + (r.sadel_titik || 0), 0),
+      sisip: d.reduce((s, r) => s + (r.sisip_meter || 0), 0),
+    })
   }
 
   async function loadPage() {
@@ -67,14 +86,12 @@ export default function Kebocoran() {
     let query = supabase.from('leak_events').select('*', { count: 'exact' })
       .order('tanggal_kejadian', { ascending: false })
       .range(from, to)
-
     if (q) {
       query = supabase.from('leak_events').select('*', { count: 'exact' })
         .or(`lokasi.ilike.%${q}%,distrik.ilike.%${q}%,struktur.ilike.%${q}%,deskripsi_pipa.ilike.%${q}%`)
         .order('tanggal_kejadian', { ascending: false })
         .range(from, to)
     }
-
     const { data, count, error } = await query
     if (error) { toast('Gagal memuat data: ' + error.message, 'error'); setLoading(false); return }
     setRows(data || [])
@@ -95,6 +112,7 @@ export default function Kebocoran() {
       ;['tanggal_kejadian','mulai_perbaikan','selesai_perbaikan']
         .forEach(k => { if (!payload[k]) payload[k] = null })
       if (!payload.pipeline_id) payload.pipeline_id = null
+      if (!payload.segment_id)  payload.segment_id  = null
       delete payload.id; delete payload.created_at; delete payload.updated_at
 
       const { error } = modal === 'add'
@@ -105,8 +123,7 @@ export default function Kebocoran() {
       toast(modal === 'add' ? 'Kejadian berhasil dicatat' : 'Data berhasil diupdate')
       setModal(null)
       setPage(0)
-      await loadPage()
-      await loadSummary()
+      await Promise.all([loadPage(), loadAggregate()])
     } catch (err) {
       toast('Gagal menyimpan: ' + err.message, 'error')
     } finally {
@@ -121,6 +138,7 @@ export default function Kebocoran() {
     setRows(r => r.filter(x => x.id !== id))
     setTotal(t => t - 1)
     toast('Kejadian dihapus')
+    loadAggregate()
   }
 
   async function doExport() {
@@ -143,10 +161,7 @@ export default function Kebocoran() {
   const inp = 'w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500'
   const lbl = 'text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1'
 
-  const totBocor = rows.reduce((s, r) => s + (r.bocor_titik || 0), 0)
-  const totClamp = rows.reduce((s, r) => s + (r.clamp_titik || 0), 0)
-  const totSadel = rows.reduce((s, r) => s + (r.sadel_titik || 0), 0)
-  const totSisip = rows.reduce((s, r) => s + (r.sisip_meter || 0), 0)
+  const { bocor: totBocor, clamp: totClamp, sadel: totSadel, sisip: totSisip } = summary
 
   return (
     <div className="space-y-4 max-w-6xl">
@@ -241,7 +256,18 @@ export default function Kebocoran() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className={lbl}>Flowline</label>
+                <label className={lbl}>Segmen Pipa <span className="text-blue-400">(untuk update Decision Matrix)</span></label>
+                <select value={form.segment_id || ''} onChange={e => f('segment_id', e.target.value)} className={inp}>
+                  <option value="">— Pilih Segmen —</option>
+                  {segs.map(s => (
+                    <option key={s.id} value={s.id}>
+                      [{s.category || '—'}] {s.from_loc || '—'} → {s.to_loc || '—'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-span-2">
+                <label className={lbl}>Flowline Register</label>
                 <select value={form.pipeline_id || ''} onChange={e => f('pipeline_id', e.target.value)} className={inp}>
                   <option value="">— Pilih Flowline (opsional) —</option>
                   {pipes.map(p => (

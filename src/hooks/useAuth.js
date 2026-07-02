@@ -29,10 +29,8 @@ export function useAuth() {
     return () => subscription.unsubscribe()
   }, [])
 
-  async function signIn(email, password) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw error
-  }
+  const signIn = (email, password) =>
+    supabase.auth.signInWithPassword({ email, password })
 
   const signOut = () => supabase.auth.signOut()
 
