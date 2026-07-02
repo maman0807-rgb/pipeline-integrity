@@ -84,14 +84,18 @@ export default function Dashboard() {
     const totalTrunklineM  = (panjangTrunkline || []).reduce((s, r) => s + (r.length_m   || 0), 0)
 
     setStats({
-      totalPipes:     totalPipes  ?? 0,
-      totalSegs:      totalSegs   ?? 0,
-      bad:           (badPipes    ?? 0) + (badSegs    ?? 0),
-      monitor:       (monPipes    ?? 0) + (monSegs    ?? 0),
-      good:          (goodPipes   ?? 0) + (goodSegs   ?? 0),
-      p1:             p1          ?? 0,
-      flowlineKm:    (totalFlowlineM  / 1000).toFixed(2),
-      trunklineKm:   (totalTrunklineM / 1000).toFixed(2),
+      totalPipes:  totalPipes ?? 0,
+      totalSegs:   totalSegs  ?? 0,
+      badPipes:    badPipes   ?? 0,
+      monPipes:    monPipes   ?? 0,
+      goodPipes:   goodPipes  ?? 0,
+      badSegs:     badSegs    ?? 0,
+      monSegs:     monSegs    ?? 0,
+      goodSegs:    goodSegs   ?? 0,
+      bad:        (badPipes   ?? 0) + (badSegs  ?? 0),
+      p1:          p1         ?? 0,
+      flowlineKm:  (totalFlowlineM  / 1000).toFixed(2),
+      trunklineKm: (totalTrunklineM / 1000).toFixed(2),
     })
     setAlerts(expiring || [])
     setRecentLeaks(leaks || [])
@@ -147,18 +151,42 @@ export default function Dashboard() {
       </div>
 
       {/* Integrity status */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 text-center">
-          <p className="text-3xl font-bold text-red-400">{stats.bad}</p>
-          <p className="text-xs font-semibold text-red-400 mt-1 uppercase tracking-wider">BAD</p>
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-sm font-bold text-white mb-1">Status Integritas — Flowline Register</h2>
+          <p className="text-xs text-slate-500">Berdasarkan {stats.totalPipes} flowline terdaftar</p>
         </div>
-        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-4 text-center">
-          <p className="text-3xl font-bold text-yellow-400">{stats.monitor}</p>
-          <p className="text-xs font-semibold text-yellow-400 mt-1 uppercase tracking-wider">MONITOR</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 text-center">
+            <p className="text-3xl font-bold text-red-400">{stats.badPipes}</p>
+            <p className="text-xs font-semibold text-red-400 mt-1 uppercase tracking-wider">BAD</p>
+          </div>
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-4 text-center">
+            <p className="text-3xl font-bold text-yellow-400">{stats.monPipes}</p>
+            <p className="text-xs font-semibold text-yellow-400 mt-1 uppercase tracking-wider">MONITOR</p>
+          </div>
+          <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-4 text-center">
+            <p className="text-3xl font-bold text-green-400">{stats.goodPipes}</p>
+            <p className="text-xs font-semibold text-green-400 mt-1 uppercase tracking-wider">GOOD</p>
+          </div>
         </div>
-        <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-4 text-center">
-          <p className="text-3xl font-bold text-green-400">{stats.good}</p>
-          <p className="text-xs font-semibold text-green-400 mt-1 uppercase tracking-wider">GOOD</p>
+        <div className="mt-2">
+          <h2 className="text-sm font-bold text-white mb-1">Status Integritas — Monitoring Inspeksi</h2>
+          <p className="text-xs text-slate-500">Berdasarkan {stats.totalSegs} segmen inspeksi</p>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 text-center">
+            <p className="text-3xl font-bold text-red-400">{stats.badSegs}</p>
+            <p className="text-xs font-semibold text-red-400 mt-1 uppercase tracking-wider">BAD</p>
+          </div>
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-4 text-center">
+            <p className="text-3xl font-bold text-yellow-400">{stats.monSegs}</p>
+            <p className="text-xs font-semibold text-yellow-400 mt-1 uppercase tracking-wider">MONITOR</p>
+          </div>
+          <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-4 text-center">
+            <p className="text-3xl font-bold text-green-400">{stats.goodSegs}</p>
+            <p className="text-xs font-semibold text-green-400 mt-1 uppercase tracking-wider">GOOD</p>
+          </div>
         </div>
       </div>
 
