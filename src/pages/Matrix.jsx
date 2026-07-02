@@ -1,10 +1,20 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-const COLORS = ['#d1fae5','#a7f3d0','#fde68a','#fdba74','#dc2626']
-const LABELS = { 1:'Low',2:'Low-Med',3:'Medium',4:'High',5:'Extreme' }
+const RISK_COLORS = {
+  1: { bg: 'rgba(34,197,94,0.15)',  border: 'rgba(34,197,94,0.4)',  text: '#4ade80', label: 'Low' },
+  2: { bg: 'rgba(250,204,21,0.15)', border: 'rgba(250,204,21,0.4)', text: '#facc15', label: 'Low-Med' },
+  3: { bg: 'rgba(251,146,60,0.15)', border: 'rgba(251,146,60,0.4)', text: '#fb923c', label: 'Medium' },
+  4: { bg: 'rgba(239,68,68,0.15)',  border: 'rgba(239,68,68,0.4)',  text: '#f87171', label: 'High' },
+  5: { bg: 'rgba(185,28,28,0.3)',   border: 'rgba(185,28,28,0.6)',  text: '#fca5a5', label: 'Extreme' },
+}
+
 const RISK = [
-  [1,1,1,2,3],[1,1,2,3,3],[1,2,2,3,4],[2,2,3,4,4],[2,3,4,4,5]
+  [1,1,1,2,3],
+  [1,1,2,3,3],
+  [1,2,2,3,4],
+  [2,2,3,4,4],
+  [2,3,4,4,5],
 ]
 
 function pof(leakCount) {
@@ -21,102 +31,229 @@ function cof(status) {
 }
 
 export default function Matrix() {
-  const [items, setItems]     = useState([])
+  const [items, setItems]       = useState([])
   const [selected, setSelected] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
-    supabase.from('pipeline_segments').select('*').then(({ data }) => {
-      setItems((data || []).map(d => ({
-        ...d,
-        pof: pof(d.leak_event || 0),
-        cof: cof(d.integrity_status),
-        risk: RISK[pof(d.leak_event || 0) - 1][cof(d.integrity_status) - 1],
-      })))
-      setLoading(false)
-    })
+    supabase.from('pipeline_segments').select('id,from_loc,to_loc,category,service_fluid,integrity_status,leak_event,size_inch,length_m')
+      .then(({ data }) => {
+        setItems((data || []).map(d => ({
+          ...d,
+          _pof:  pof(d.leak_event || 0),
+          _cof:  cof(d.integrity_status),
+          _risk: RISK[pof(d.leak_event || 0) - 1][cof(d.integrity_status) - 1],
+        })))
+        setLoading(false)
+      })
   }, [])
 
-  // build 5×5 grid: rows = PoF 5→1, cols = CoF 1→5
   const cells = {}
   items.forEach(it => {
-    const key = `${it.pof}-${it.cof}`
+    const key = `${it._pof}-${it._cof}`
     if (!cells[key]) cells[key] = []
     cells[key].push(it)
   })
 
-  if (loading) return <div className="text-slate-400 text-sm p-8">Memuat...</div>
+  const riskSummary = [1,2,3,4,5].map(r => ({
+    r, count: items.filter(i => i._risk === r).length
+  }))
+
+  if (loading) return (
+    <div style={{ color: '#94a3b8', padding: 32 }}>Memuat data segmen...</div>
+  )
+
+  const CELL_SIZE = 160
 
   return (
-    <div className="space-y-4 max-w-5xl">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Decision Matrix</h1>
-        <p className="text-slate-400 text-sm">PoF × CoF — berdasarkan leak count & integrity status</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, height: '100%' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'white', margin: 0 }}>Decision Matrix</h1>
+          <p style={{ color: '#94a3b8', fontSize: 14, marginTop: 4 }}>
+            PoF (Probability of Failure) × CoF (Consequence of Failure) — {items.length} segmen
+          </p>
+        </div>
+        {/* Legend */}
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          {riskSummary.map(({ r, count }) => {
+            const c = RISK_COLORS[r]
+            return (
+              <div key={r} style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: c.bg, border: `1px solid ${c.border}`,
+                borderRadius: 10, padding: '6px 14px'
+              }}>
+                <span style={{ width: 10, height: 10, borderRadius: 3, background: c.text, flexShrink: 0 }} />
+                <span style={{ color: c.text, fontSize: 13, fontWeight: 700 }}>{c.label}</span>
+                <span style={{ color: 'white', fontSize: 13, fontWeight: 800 }}>{count}</span>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
-      <div className="flex gap-2 flex-wrap text-xs font-bold">
-        {[1,2,3,4,5].map(i => (
-          <span key={i} className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded" style={{ background: COLORS[i-1] }} />
-            <span className="text-slate-300">{LABELS[i]}</span>
-          </span>
-        ))}
-      </div>
+      {/* Matrix grid */}
+      <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
+        <div style={{ display: 'inline-block', minWidth: 'max-content' }}>
 
-      <div className="overflow-x-auto">
-        <div className="inline-grid gap-1" style={{ gridTemplateColumns: '40px repeat(5,minmax(100px,1fr))' }}>
-          {/* Header row CoF */}
-          <div />
-          {[1,2,3,4,5].map(c => (
-            <div key={c} className="text-center text-xs font-bold text-slate-400 pb-1">CoF {c}</div>
-          ))}
-          {/* Matrix rows PoF 5→1 */}
-          {[5,4,3,2,1].map(p => (
-            <>
-              <div key={`lbl-${p}`} className="flex items-center justify-center text-xs font-bold text-slate-400">P{p}</div>
-              {[1,2,3,4,5].map(c => {
-                const key   = `${p}-${c}`
-                const list  = cells[key] || []
-                const risk  = RISK[p-1][c-1]
-                const bg    = COLORS[risk-1]
-                return (
-                  <div key={key}
-                    onClick={() => setSelected({ p, c, list, risk })}
-                    className="rounded-xl p-2 cursor-pointer hover:opacity-80 transition-opacity min-h-16 relative"
-                    style={{ background: bg + '33', border: `1px solid ${bg}66` }}
-                  >
-                    <span className="absolute top-1.5 right-2 text-[10px] font-black" style={{ color: bg }}>R{risk}</span>
-                    {list.slice(0,3).map(it => (
-                      <div key={it.id} className="text-[10px] text-slate-200 truncate bg-black/20 rounded px-1 mb-0.5">
-                        {it.from_loc || '?'} → {it.to_loc || '?'}
+          {/* CoF header */}
+          <div style={{ display: 'flex', marginLeft: 64, marginBottom: 8, gap: 8 }}>
+            {[1,2,3,4,5].map(c => (
+              <div key={c} style={{
+                width: CELL_SIZE, textAlign: 'center',
+                color: '#64748b', fontSize: 13, fontWeight: 700, letterSpacing: 1,
+                textTransform: 'uppercase'
+              }}>
+                CoF {c}
+              </div>
+            ))}
+          </div>
+
+          {/* PoF label + rows */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            {/* PoF axis label */}
+            <div style={{ width: 64, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[5,4,3,2,1].map(p => (
+                <div key={p} style={{
+                  height: CELL_SIZE, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexDirection: 'column', gap: 2
+                }}>
+                  <span style={{ color: '#64748b', fontSize: 13, fontWeight: 700, letterSpacing: 1 }}>PoF</span>
+                  <span style={{ color: 'white', fontSize: 20, fontWeight: 800 }}>{p}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Cells */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[5,4,3,2,1].map(p => (
+                <div key={p} style={{ display: 'flex', gap: 8 }}>
+                  {[1,2,3,4,5].map(c => {
+                    const key  = `${p}-${c}`
+                    const list = cells[key] || []
+                    const risk = RISK[p-1][c-1]
+                    const col  = RISK_COLORS[risk]
+                    const isSelected = selected?.p === p && selected?.c === c
+                    return (
+                      <div key={key}
+                        onClick={() => setSelected(isSelected ? null : { p, c, list, risk })}
+                        style={{
+                          width: CELL_SIZE, height: CELL_SIZE,
+                          background: col.bg,
+                          border: `2px solid ${isSelected ? col.text : col.border}`,
+                          borderRadius: 14, padding: 12,
+                          cursor: 'pointer', position: 'relative',
+                          transition: 'all 0.15s',
+                          boxShadow: isSelected ? `0 0 0 2px ${col.text}40` : 'none',
+                          overflow: 'hidden',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.2)'}
+                        onMouseLeave={e => e.currentTarget.style.filter = 'brightness(1)'}
+                      >
+                        {/* Risk badge */}
+                        <div style={{
+                          position: 'absolute', top: 8, right: 8,
+                          background: col.text + '22', border: `1px solid ${col.text}55`,
+                          borderRadius: 6, padding: '1px 7px',
+                          fontSize: 11, fontWeight: 800, color: col.text,
+                        }}>
+                          R{risk}
+                        </div>
+
+                        {/* Count badge */}
+                        {list.length > 0 && (
+                          <div style={{
+                            position: 'absolute', bottom: 8, right: 8,
+                            background: 'rgba(0,0,0,0.35)',
+                            borderRadius: 6, padding: '2px 8px',
+                            fontSize: 12, fontWeight: 700, color: 'white',
+                          }}>
+                            {list.length}
+                          </div>
+                        )}
+
+                        {/* Items preview */}
+                        <div style={{ paddingTop: 4 }}>
+                          {list.slice(0, 3).map(it => (
+                            <div key={it.id} style={{
+                              fontSize: 11, color: '#e2e8f0',
+                              background: 'rgba(0,0,0,0.25)',
+                              borderRadius: 5, padding: '2px 6px',
+                              marginBottom: 3, whiteSpace: 'nowrap',
+                              overflow: 'hidden', textOverflow: 'ellipsis',
+                            }}>
+                              {it.from_loc || '—'}
+                            </div>
+                          ))}
+                          {list.length > 3 && (
+                            <div style={{ fontSize: 11, color: '#94a3b8' }}>
+                              +{list.length - 3} lagi
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    ))}
-                    {list.length > 3 && <div className="text-[10px] text-slate-400">+{list.length - 3} lagi</div>}
-                  </div>
-                )
-              })}
-            </>
-          ))}
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Detail panel */}
       {selected && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-bold text-white">PoF {selected.p} × CoF {selected.c} — Risiko {LABELS[selected.risk]}</h2>
-            <button onClick={() => setSelected(null)} className="text-slate-400 hover:text-white text-xs">✕ Tutup</button>
+        <div style={{
+          background: '#0f172a', border: '1px solid #1e293b',
+          borderRadius: 16, padding: 24
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{
+                background: RISK_COLORS[selected.risk].bg,
+                border: `1px solid ${RISK_COLORS[selected.risk].border}`,
+                borderRadius: 8, padding: '4px 14px',
+              }}>
+                <span style={{ color: RISK_COLORS[selected.risk].text, fontWeight: 800, fontSize: 13 }}>
+                  R{selected.risk} — {RISK_COLORS[selected.risk].label}
+                </span>
+              </div>
+              <span style={{ color: 'white', fontWeight: 700 }}>
+                PoF {selected.p} × CoF {selected.c} — {selected.list.length} segmen
+              </span>
+            </div>
+            <button onClick={() => setSelected(null)}
+              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 20 }}>
+              ✕
+            </button>
           </div>
+
           {selected.list.length === 0
-            ? <p className="text-slate-500 text-sm">Tidak ada segmen di sel ini</p>
-            : <div className="divide-y divide-slate-800">
+            ? <p style={{ color: '#64748b' }}>Tidak ada segmen di sel ini</p>
+            : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 10 }}>
                 {selected.list.map(it => (
-                  <div key={it.id} className="py-2.5 grid grid-cols-3 gap-2 text-sm">
-                    <span className="text-white font-medium">{it.from_loc || '—'} → {it.to_loc || '—'}</span>
-                    <span className="text-slate-400">{it.category} · {it.service_fluid || '—'}</span>
-                    <span className={`font-bold ${it.integrity_status==='BAD'?'text-red-400':it.integrity_status==='MONITOR'?'text-yellow-400':'text-green-400'}`}>
-                      {it.integrity_status || '—'}
-                    </span>
+                  <div key={it.id} style={{
+                    background: '#1e293b', borderRadius: 10, padding: '12px 16px',
+                    display: 'flex', flexDirection: 'column', gap: 4
+                  }}>
+                    <div style={{ fontWeight: 600, color: 'white', fontSize: 14 }}>
+                      {it.from_loc || '—'} → {it.to_loc || '—'}
+                    </div>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                      <span style={{ color: '#94a3b8', fontSize: 12 }}>{it.category || '—'}</span>
+                      <span style={{ color: '#94a3b8', fontSize: 12 }}>{it.service_fluid || '—'}</span>
+                      {it.size_inch && <span style={{ color: '#94a3b8', fontSize: 12 }}>{it.size_inch}"</span>}
+                      {it.length_m  && <span style={{ color: '#94a3b8', fontSize: 12 }}>{it.length_m} m</span>}
+                      <span style={{
+                        fontSize: 12, fontWeight: 700,
+                        color: it.integrity_status==='BAD'?'#f87171':it.integrity_status==='MONITOR'?'#facc15':'#4ade80'
+                      }}>
+                        {it.integrity_status || '—'}
+                      </span>
+                      <span style={{ color: '#f87171', fontSize: 12 }}>Leak: {it.leak_event || 0}</span>
+                    </div>
                   </div>
                 ))}
               </div>

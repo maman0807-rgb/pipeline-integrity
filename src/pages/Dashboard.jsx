@@ -43,54 +43,93 @@ export default function Dashboard() {
   useEffect(() => { load() }, [])
 
   async function load() {
-    const [{ data: pipes }, { data: segs }, { data: leaks }] = await Promise.all([
-      supabase.from('pipelines').select('id,integrity_status,sertifikat_berlaku,priority,dari_sumur'),
-      supabase.from('pipeline_segments').select('integrity_status'),
+    const today = new Date().toISOString().slice(0, 10)
+    const in90  = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10)
+
+    const [
+      { count: totalPipes },
+      { count: totalSegs },
+      { count: badPipes },   { count: badSegs },
+      { count: monPipes },   { count: monSegs },
+      { count: goodPipes },  { count: goodSegs },
+      { count: p1 },
+      { data: expiring },
+      { data: leaks },
+      { data: panjangFlowline },
+      { data: panjangTrunkline },
+    ] = await Promise.all([
+      supabase.from('pipelines').select('*', { count: 'exact', head: true }),
+      supabase.from('pipeline_segments').select('*', { count: 'exact', head: true }),
+      supabase.from('pipelines').select('*', { count: 'exact', head: true }).eq('integrity_status', 'BAD'),
+      supabase.from('pipeline_segments').select('*', { count: 'exact', head: true }).eq('integrity_status', 'BAD'),
+      supabase.from('pipelines').select('*', { count: 'exact', head: true }).eq('integrity_status', 'MONITOR'),
+      supabase.from('pipeline_segments').select('*', { count: 'exact', head: true }).eq('integrity_status', 'MONITOR'),
+      supabase.from('pipelines').select('*', { count: 'exact', head: true }).eq('integrity_status', 'GOOD'),
+      supabase.from('pipeline_segments').select('*', { count: 'exact', head: true }).eq('integrity_status', 'GOOD'),
+      supabase.from('pipelines').select('*', { count: 'exact', head: true }).eq('priority', 'P1'),
+      supabase.from('pipelines').select('id,dari_sumur,sertifikat_berlaku').lte('sertifikat_berlaku', in90).gte('sertifikat_berlaku', today).order('sertifikat_berlaku').limit(10),
       supabase.from('leak_events').select('id,tanggal_kejadian,lokasi,bocor_titik,clamp_titik,sadel_titik,sisip_meter').order('tanggal_kejadian', { ascending: false }).limit(5),
+      supabase.from('pipelines').select('panjang_m'),
+      supabase.from('pipeline_segments').select('length_m,category').eq('category', 'TRUNKLINE').lt('length_m', 200000),
     ])
 
-    const p = pipes || []
-    const s = segs  || []
-    const l = leaks || []
-
-    const today = new Date()
-    const in90  = new Date(today); in90.setDate(today.getDate() + 90)
-
-    const expiring = p.filter(x => {
-      if (!x.sertifikat_berlaku) return false
-      const d = new Date(x.sertifikat_berlaku)
-      return d <= in90
-    })
+    const totalFlowlineM   = (panjangFlowline  || []).reduce((s, r) => s + (r.panjang_m  || 0), 0)
+    const totalTrunklineM  = (panjangTrunkline || []).reduce((s, r) => s + (r.length_m   || 0), 0)
 
     setStats({
-      totalPipes:   p.length,
-      totalSegs:    s.length,
-      totalLeaks:   l.length,
-      bad:          s.filter(x => x.integrity_status === 'BAD').length + p.filter(x => x.integrity_status === 'BAD').length,
-      monitor:      s.filter(x => x.integrity_status === 'MONITOR').length + p.filter(x => x.integrity_status === 'MONITOR').length,
-      good:         s.filter(x => x.integrity_status === 'GOOD').length + p.filter(x => x.integrity_status === 'GOOD').length,
-      p1:           p.filter(x => x.priority === 'P1').length,
+      totalPipes:     totalPipes  ?? 0,
+      totalSegs:      totalSegs   ?? 0,
+      bad:           (badPipes    ?? 0) + (badSegs    ?? 0),
+      monitor:       (monPipes    ?? 0) + (monSegs    ?? 0),
+      good:          (goodPipes   ?? 0) + (goodSegs   ?? 0),
+      p1:             p1          ?? 0,
+      flowlineKm:    (totalFlowlineM  / 1000).toFixed(2),
+      trunklineKm:   (totalTrunklineM / 1000).toFixed(2),
     })
-    setAlerts(expiring)
-    setRecentLeaks(l)
+    setAlerts(expiring || [])
+    setRecentLeaks(leaks || [])
     setLoading(false)
   }
 
   if (loading) return <div className="flex items-center justify-center h-64 text-slate-400 text-sm">Memuat data...</div>
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-6xl">
       <div>
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
         <p className="text-slate-400 text-sm mt-1">Pipeline Integrity — Prabumulih Field</p>
       </div>
 
-      {/* KPI */}
+      {/* KPI row 1 — jumlah */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiCard label="Total Flowline" value={stats.totalPipes} sub="master register" icon={GitBranch} color="blue" />
         <KpiCard label="Total Segmen" value={stats.totalSegs} sub="monitoring inspeksi" icon={Activity} color="blue" />
         <KpiCard label="Status BAD" value={stats.bad} sub="perlu tindakan segera" icon={AlertTriangle} color="red" />
         <KpiCard label="P1 — Prioritas" value={stats.p1} sub="ganti/repair segera" icon={Flame} color="red" />
+      </div>
+
+      {/* KPI row 2 — panjang */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center gap-5">
+          <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
+            <GitBranch className="w-6 h-6 text-cyan-400" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Panjang Flowline</p>
+            <p className="text-3xl font-bold text-white">{stats.flowlineKm} <span className="text-lg font-semibold text-cyan-400">km</span></p>
+            <p className="text-xs text-slate-500 mt-0.5">Total panjang {stats.totalPipes} flowline</p>
+          </div>
+        </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center gap-5">
+          <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
+            <Activity className="w-6 h-6 text-purple-400" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Panjang Trunkline</p>
+            <p className="text-3xl font-bold text-white">{stats.trunklineKm} <span className="text-lg font-semibold text-purple-400">km</span></p>
+            <p className="text-xs text-slate-500 mt-0.5">Segmen kategori TRUNKLINE</p>
+          </div>
+        </div>
       </div>
 
       {/* Integrity status */}

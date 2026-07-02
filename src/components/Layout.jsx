@@ -1,103 +1,131 @@
 import { useState } from 'react'
 import {
   LayoutDashboard, GitBranch, Activity, Flame,
-  Calculator, Grid3x3, LogOut, Menu, X, Droplets, Upload
+  Calculator, Grid3x3, LogOut, Menu, X, Droplets, Upload, Users
 } from 'lucide-react'
 
 const NAV = [
-  { id: 'dashboard',  label: 'Dashboard',         icon: LayoutDashboard },
-  { id: 'flowline',   label: 'Flowline Register',  icon: GitBranch },
-  { id: 'monitoring', label: 'Monitoring Inspeksi',icon: Activity },
-  { id: 'kebocoran',  label: 'History Kebocoran',  icon: Flame },
-  { id: 'cba',        label: 'CBA Kalkulator',     icon: Calculator },
-  { id: 'matrix',     label: 'Decision Matrix',    icon: Grid3x3 },
-  { id: 'import',     label: 'Import Excel',       icon: Upload },
+  { id: 'dashboard',  label: 'Dashboard',          icon: LayoutDashboard },
+  { id: 'flowline',   label: 'Flowline Register',   icon: GitBranch },
+  { id: 'monitoring', label: 'Monitoring Inspeksi', icon: Activity },
+  { id: 'kebocoran',  label: 'History Kebocoran',   icon: Flame },
+  { id: 'cba',        label: 'CBA Kalkulator',      icon: Calculator },
+  { id: 'matrix',     label: 'Decision Matrix',     icon: Grid3x3 },
+  { id: 'users',      label: 'Manajemen User',      icon: Users },
+  { id: 'import',     label: 'Import Excel',        icon: Upload },
 ]
 
 export default function Layout({ page, onNav, onSignOut, children }) {
-  const [open, setOpen] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  const Sidebar = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
+      {/* Logo */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '24px 20px', borderBottom: '1px solid #1e293b' }}>
+        <div style={{ width: 40, height: 40, borderRadius: 12, background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Droplets style={{ width: 22, height: 22, color: 'white' }} />
+        </div>
+        <div>
+          <p style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 2 }}>PHR Prabumulih</p>
+          <p style={{ fontSize: 14, fontWeight: 700, color: 'white' }}>Pipeline Integrity</p>
+        </div>
+      </div>
+      {/* Nav */}
+      <nav style={{ flex: 1, padding: '16px 12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {NAV.map(({ id, label, icon: Icon }) => (
+          <button key={id}
+            onClick={() => { onNav(id); setMobileOpen(false) }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '12px 16px', borderRadius: 12, border: 'none', cursor: 'pointer',
+              width: '100%', textAlign: 'left', fontSize: 14, fontWeight: 500,
+              background: page === id ? '#2563eb' : 'transparent',
+              color: page === id ? 'white' : '#94a3b8',
+            }}
+            onMouseEnter={e => { if (page !== id) { e.currentTarget.style.background = '#1e293b'; e.currentTarget.style.color = 'white' } }}
+            onMouseLeave={e => { if (page !== id) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#94a3b8' } }}
+          >
+            <Icon style={{ width: 18, height: 18, flexShrink: 0 }} />
+            {label}
+          </button>
+        ))}
+      </nav>
+      {/* Logout */}
+      <div style={{ padding: '12px 12px 20px', borderTop: '1px solid #1e293b' }}>
+        <button onClick={onSignOut}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '12px 16px', borderRadius: 12, border: 'none', cursor: 'pointer',
+            width: '100%', fontSize: 14, fontWeight: 500,
+            background: 'transparent', color: '#94a3b8',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#1e293b'; e.currentTarget.style.color = 'white' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#94a3b8' }}
+        >
+          <LogOut style={{ width: 18, height: 18 }} /> Keluar
+        </button>
+      </div>
+    </div>
+  )
 
   return (
-    <div className="flex h-screen bg-slate-950 overflow-hidden">
-      {/* Sidebar desktop */}
-      <aside className="hidden md:flex flex-col w-60 bg-slate-900 border-r border-slate-800 shrink-0">
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-800">
-          <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shrink-0">
-            <Droplets className="w-5 h-5 text-white" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] text-slate-400 uppercase tracking-widest">PHR Prabumulih</p>
-            <p className="text-sm font-bold text-white truncate">Pipeline Integrity</p>
-          </div>
-        </div>
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {NAV.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id} onClick={() => onNav(id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                page === id
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <Icon className="w-4 h-4 shrink-0" />
-              {label}
-            </button>
-          ))}
-        </nav>
-        <div className="px-3 pb-4 border-t border-slate-800 pt-3">
-          <button onClick={onSignOut}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
-            <LogOut className="w-4 h-4" /> Keluar
-          </button>
-        </div>
+    <div style={{ display: 'flex', height: '100vh', background: '#020817', overflow: 'hidden' }}>
+
+      {/* Sidebar — always visible on screen ≥ 768px */}
+      <aside className="sidebar-desktop" style={{
+        width: 260, flexShrink: 0, background: '#0f172a',
+        borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column'
+      }}>
+        <Sidebar />
       </aside>
 
-      {/* Mobile drawer */}
-      {open && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />
-          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-slate-900 flex flex-col">
-            <div className="flex items-center justify-between px-4 py-4 border-b border-slate-800">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center">
-                  <Droplets className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-sm font-bold text-white">Pipeline Integrity</span>
-              </div>
-              <button onClick={() => setOpen(false)} className="text-slate-400"><X className="w-5 h-5" /></button>
-            </div>
-            <nav className="flex-1 px-3 py-4 space-y-1">
-              {NAV.map(({ id, label, icon: Icon }) => (
-                <button key={id} onClick={() => { onNav(id); setOpen(false) }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                    page === id ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                  }`}>
-                  <Icon className="w-4 h-4 shrink-0" />{label}
-                </button>
-              ))}
-            </nav>
-            <div className="px-3 pb-4 border-t border-slate-800 pt-3">
-              <button onClick={onSignOut}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800">
-                <LogOut className="w-4 h-4" /> Keluar
-              </button>
-            </div>
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className="sidebar-mobile-overlay"
+          style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex' }}
+        >
+          <div onClick={() => setMobileOpen(false)}
+            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)' }} />
+          <aside style={{
+            position: 'relative', width: 260, background: '#0f172a',
+            borderRight: '1px solid #1e293b', zIndex: 1, display: 'flex', flexDirection: 'column'
+          }}>
+            <button onClick={() => setMobileOpen(false)}
+              style={{ position: 'absolute', top: 12, right: 12, background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+              <X style={{ width: 20, height: 20 }} />
+            </button>
+            <Sidebar />
           </aside>
         </div>
       )}
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Main */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Mobile topbar */}
-        <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-slate-900 border-b border-slate-800">
-          <button onClick={() => setOpen(true)} className="text-slate-400"><Menu className="w-5 h-5" /></button>
-          <span className="text-sm font-bold text-white">{NAV.find(n => n.id === page)?.label ?? 'Pipeline Integrity'}</span>
+        <div className="mobile-topbar" style={{
+          display: 'none', alignItems: 'center', gap: 12,
+          padding: '12px 16px', background: '#0f172a', borderBottom: '1px solid #1e293b'
+        }}>
+          <button onClick={() => setMobileOpen(true)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+            <Menu style={{ width: 24, height: 24 }} />
+          </button>
+          <span style={{ fontWeight: 700, color: 'white', fontSize: 15 }}>
+            {NAV.find(n => n.id === page)?.label ?? 'Pipeline Integrity'}
+          </span>
         </div>
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+
+        <main style={{ flex: 1, overflowY: 'auto', padding: '32px 40px' }}>
           {children}
         </main>
       </div>
+
+      <style>{`
+        @media (max-width: 767px) {
+          .sidebar-desktop { display: none !important; }
+          .mobile-topbar { display: flex !important; }
+        }
+      `}</style>
     </div>
   )
 }

@@ -9,6 +9,7 @@ import Kebocoran from './pages/Kebocoran'
 import CBA from './pages/CBA'
 import Matrix from './pages/Matrix'
 import ImportExcel from './pages/ImportExcel'
+import UserManagement from './pages/UserManagement'
 
 const PAGES = {
   dashboard: Dashboard,
@@ -17,11 +18,12 @@ const PAGES = {
   kebocoran: Kebocoran,
   cba: CBA,
   matrix: Matrix,
+  users: UserManagement,
   import: ImportExcel,
 }
 
 export default function App() {
-  const { session, loading } = useAuth()
+  const { user, loading, signIn, signOut } = useAuth()
   const [page, setPage] = useState('dashboard')
 
   if (loading) {
@@ -32,12 +34,12 @@ export default function App() {
     )
   }
 
-  if (!session) return <LoginPage />
+  if (!user) return <LoginPage onLogin={signIn} />
 
   const Page = PAGES[page] || Dashboard
 
   return (
-    <Layout page={page} onNavigate={setPage}>
+    <Layout page={page} onNav={setPage} onSignOut={signOut}>
       <Page />
     </Layout>
   )
