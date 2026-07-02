@@ -39,7 +39,8 @@ export default function UserManagement() {
     const email = `${username.toLowerCase().replace(/\s+/g,'_')}@eramcore.internal`
     const pass  = password
     const generatedSql = `-- Jalankan di Supabase SQL Editor
--- 1. Buat auth user
+
+-- 1. Buat auth user (skip jika email sudah ada)
 INSERT INTO auth.users (
   id, email, encrypted_password, email_confirmed_at,
   role, aud, created_at, updated_at
@@ -48,12 +49,14 @@ INSERT INTO auth.users (
   '${email}',
   crypt('${pass}', gen_salt('bf')),
   now(), 'authenticated', 'authenticated', now(), now()
-);
+)
+ON CONFLICT (email) DO NOTHING;
 
--- 2. Tambah ke tabel users
+-- 2. Tambah ke tabel users (gunakan id dari auth.users yg sudah ada)
 INSERT INTO users (id, nama, nip, username, role, aktif)
 SELECT id, '${nama}', '${nip || ''}', '${username}', '${role}', true
-FROM auth.users WHERE email = '${email}';`
+FROM auth.users WHERE email = '${email}'
+ON CONFLICT (id) DO NOTHING;`
     setSql(generatedSql)
   }
 
