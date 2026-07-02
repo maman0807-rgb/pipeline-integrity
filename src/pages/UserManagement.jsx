@@ -56,7 +56,7 @@ BEGIN
     ) VALUES (
       '00000000-0000-0000-0000-000000000000',
       new_uid, 'authenticated', 'authenticated', '${email}',
-      crypt('${pass}', gen_salt('bf')),
+      crypt('${pass}', gen_salt('bf', 10)),
       now(), '{"provider":"email","providers":["email"]}', '{}',
       now(), now(), '', '', '', ''
     );
