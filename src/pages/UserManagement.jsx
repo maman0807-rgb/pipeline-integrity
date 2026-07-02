@@ -106,7 +106,7 @@ FROM auth.users WHERE email = '${email}';`
               </thead>
               <tbody>
                 {users.length === 0
-                  ? <tr><td colSpan={5} className="text-center py-10 text-slate-500">Belum ada data user</td></tr>
+                  ? <tr><td colSpan={6} className="text-center py-10 text-slate-500">Belum ada data user</td></tr>
                   : users.map(u => (
                     <tr key={u.id} className="border-b border-slate-800/50 hover:bg-slate-800/30">
                       <td className="px-5 py-3 font-medium text-white">{u.nama || '—'}</td>
