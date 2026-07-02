@@ -39,24 +39,39 @@ export default function UserManagement() {
     const email = `${username.toLowerCase().replace(/\s+/g,'_')}@eramcore.internal`
     const pass  = password
     const generatedSql = `-- Jalankan di Supabase SQL Editor
+DO $$
+DECLARE
+  new_uid uuid;
+BEGIN
+  -- Cek apakah auth user sudah ada
+  SELECT id INTO new_uid FROM auth.users WHERE email = '${email}';
 
--- 1. Buat auth user (skip jika email sudah ada)
-INSERT INTO auth.users (
-  id, email, encrypted_password, email_confirmed_at,
-  role, aud, created_at, updated_at
-) VALUES (
-  gen_random_uuid(),
-  '${email}',
-  crypt('${pass}', gen_salt('bf')),
-  now(), 'authenticated', 'authenticated', now(), now()
-)
-ON CONFLICT (email) DO NOTHING;
+  IF new_uid IS NULL THEN
+    new_uid := gen_random_uuid();
+    INSERT INTO auth.users (
+      instance_id, id, aud, role, email, encrypted_password,
+      email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
+      created_at, updated_at, confirmation_token,
+      email_change, email_change_token_new, recovery_token
+    ) VALUES (
+      '00000000-0000-0000-0000-000000000000',
+      new_uid, 'authenticated', 'authenticated', '${email}',
+      crypt('${pass}', gen_salt('bf')),
+      now(), '{"provider":"email","providers":["email"]}', '{}',
+      now(), now(), '', '', '', ''
+    );
+    RAISE NOTICE 'Auth user dibuat: %', new_uid;
+  ELSE
+    RAISE NOTICE 'Auth user sudah ada (id: %), lewati insert.', new_uid;
+  END IF;
 
--- 2. Tambah ke tabel users (gunakan id dari auth.users yg sudah ada)
-INSERT INTO users (id, nama, nip, username, role, aktif)
-SELECT id, '${nama}', '${nip || ''}', '${username}', '${role}', true
-FROM auth.users WHERE email = '${email}'
-ON CONFLICT (id) DO NOTHING;`
+  INSERT INTO users (id, nama, nip, username, role, aktif)
+  VALUES (new_uid, '${nama}', '${nip || ''}', '${username}', '${role}', true)
+  ON CONFLICT (id) DO NOTHING;
+
+  RAISE NOTICE 'Selesai. User % berhasil ditambahkan.', '${nama}';
+END;
+$$;`
     setSql(generatedSql)
   }
 
@@ -64,7 +79,9 @@ ON CONFLICT (id) DO NOTHING;`
     if (!delTarget) return
     setDeleting(true)
     const { error } = await supabase.from('users').delete().eq('id', delTarget.id)
-    if (!error) {
+    if (error) {
+      alert(`Gagal hapus: ${error.message}`)
+    } else {
       const email = `${delTarget.username}@eramcore.internal`
       setDelSql(`-- Hapus auth user (jalankan di Supabase SQL Editor)\nDELETE FROM auth.users WHERE email = '${email}';`)
       setUsers(u => u.filter(x => x.id !== delTarget.id))
@@ -127,7 +144,7 @@ ON CONFLICT (id) DO NOTHING;`
                       </td>
                       <td className="px-5 py-3">
                         <button onClick={() => setDelTarget(u)}
-                          className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-500 hover:text-red-400 transition-colors">
+                          className="p-1.5 hover:bg-red-500/20 rounded-lg text-red-400 hover:text-red-300 transition-colors">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </td>
