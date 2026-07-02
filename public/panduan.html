@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panduan Penggunaan — Pipeline Integrity System</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #020817;
+      color: #e2e8f0;
+      line-height: 1.6;
+    }
+
+    /* ── Layout ── */
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: 240px; background: #0f172a;
+      border-right: 1px solid #1e293b;
+      overflow-y: auto; padding: 24px 0;
+      z-index: 100;
+    }
+    .sidebar-logo {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 20px 20px; border-bottom: 1px solid #1e293b;
+      margin-bottom: 16px;
+    }
+    .sidebar-logo .icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: #2563eb; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; font-size: 18px;
+    }
+    .sidebar-logo .brand { font-size: 13px; font-weight: 700; color: #fff; }
+    .sidebar-logo .sub   { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+    .nav-item {
+      display: block; padding: 10px 20px; color: #94a3b8;
+      text-decoration: none; font-size: 13px; font-weight: 500;
+      border-left: 3px solid transparent; transition: all .15s;
+    }
+    .nav-item:hover, .nav-item.active {
+      color: #fff; background: #1e293b; border-left-color: #2563eb;
+    }
+    .nav-section {
+      font-size: 10px; font-weight: 700; color: #475569;
+      text-transform: uppercase; letter-spacing: 1.5px;
+      padding: 16px 20px 6px;
+    }
+
+    .content {
+      margin-left: 240px;
+      padding: 48px 56px;
+      max-width: 960px;
+    }
+
+    /* ── Typography ── */
+    h1 { font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    h2 {
+      font-size: 18px; font-weight: 700; color: #fff;
+      margin: 48px 0 16px; padding-bottom: 10px;
+      border-bottom: 1px solid #1e293b;
+      display: flex; align-items: center; gap: 10px;
+    }
+    h3 { font-size: 14px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0 10px; }
+    p  { color: #94a3b8; font-size: 14px; margin-bottom: 12px; }
+    strong { color: #e2e8f0; }
+
+    .subtitle { color: #64748b; font-size: 14px; margin-bottom: 32px; }
+
+    /* ── Cards ── */
+    .card {
+      background: #0f172a; border: 1px solid #1e293b;
+      border-radius: 14px; padding: 20px 24px; margin-bottom: 16px;
+    }
+    .card-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px; margin-bottom: 16px;
+    }
+    .kpi-card {
+      border-radius: 14px; padding: 18px 20px;
+      border: 1px solid;
+    }
+    .kpi-card.blue  { background: rgba(37,99,235,.1);  border-color: rgba(37,99,235,.25);  }
+    .kpi-card.red   { background: rgba(239,68,68,.1);  border-color: rgba(239,68,68,.25);  }
+    .kpi-card.green { background: rgba(34,197,94,.1);  border-color: rgba(34,197,94,.25);  }
+    .kpi-card.yellow{ background: rgba(234,179,8,.1);  border-color: rgba(234,179,8,.25);  }
+    .kpi-title { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .kpi-val   { font-size: 22px; font-weight: 800; color: #fff; }
+    .kpi-sub   { font-size: 12px; color: #64748b; margin-top: 3px; }
+
+    /* ── Steps ── */
+    .steps { list-style: none; counter-reset: step; }
+    .steps li {
+      counter-increment: step;
+      display: flex; gap: 14px; margin-bottom: 12px; align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step);
+      min-width: 26px; height: 26px; border-radius: 8px;
+      background: #1e293b; border: 1px solid #334155;
+      color: #60a5fa; font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .steps li span { color: #94a3b8; font-size: 14px; padding-top: 3px; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 700; border: 1px solid;
+    }
+    .badge-red    { background: rgba(239,68,68,.15);  color: #f87171; border-color: rgba(239,68,68,.3); }
+    .badge-yellow { background: rgba(234,179,8,.15);  color: #facc15; border-color: rgba(234,179,8,.3); }
+    .badge-green  { background: rgba(34,197,94,.15);  color: #4ade80; border-color: rgba(34,197,94,.3); }
+    .badge-blue   { background: rgba(37,99,235,.15);  color: #60a5fa; border-color: rgba(37,99,235,.3); }
+    .badge-gray   { background: rgba(148,163,184,.1); color: #94a3b8; border-color: rgba(148,163,184,.2); }
+
+    /* ── Table ── */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      text-align: left; padding: 10px 14px;
+      color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+      border-bottom: 1px solid #1e293b;
+    }
+    tbody td { padding: 10px 14px; color: #94a3b8; border-bottom: 1px solid #1e293b; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #1e293b; color: #e2e8f0; }
+    td strong { color: #e2e8f0; }
+
+    /* ── Alert box ── */
+    .alert {
+      border-radius: 12px; padding: 14px 18px;
+      font-size: 13px; display: flex; gap: 12px; align-items: flex-start;
+      margin-bottom: 16px;
+    }
+    .alert-blue   { background: rgba(37,99,235,.1);  border: 1px solid rgba(37,99,235,.25); color: #93c5fd; }
+    .alert-yellow { background: rgba(234,179,8,.1);  border: 1px solid rgba(234,179,8,.25); color: #fde68a; }
+    .alert-green  { background: rgba(34,197,94,.1);  border: 1px solid rgba(34,197,94,.25); color: #86efac; }
+    .alert-icon { font-size: 16px; margin-top: 1px; }
+
+    /* ── Flow ── */
+    .flow { display: flex; flex-direction: column; gap: 0; }
+    .flow-item {
+      display: flex; gap: 16px; align-items: flex-start; position: relative;
+    }
+    .flow-line {
+      display: flex; flex-direction: column; align-items: center; flex-shrink: 0;
+    }
+    .flow-dot {
+      width: 32px; height: 32px; border-radius: 10px;
+      background: #1e293b; border: 1px solid #334155;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .flow-connector {
+      width: 2px; height: 28px; background: #1e293b; margin: 2px auto;
+    }
+    .flow-body { padding-top: 5px; padding-bottom: 24px; }
+    .flow-title { font-size: 14px; font-weight: 600; color: #e2e8f0; margin-bottom: 2px; }
+    .flow-desc  { font-size: 13px; color: #64748b; }
+
+    /* ── Matrix preview ── */
+    .matrix-preview {
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      gap: 4px; margin: 16px 0;
+    }
+    .matrix-cell {
+      aspect-ratio: 1; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; border: 1px solid;
+    }
+    .r1 { background:rgba(34,197,94,.1);  border-color:rgba(34,197,94,.3);  color:#4ade80; }
+    .r2 { background:rgba(234,179,8,.1);  border-color:rgba(234,179,8,.3);  color:#facc15; }
+    .r3 { background:rgba(251,146,60,.1); border-color:rgba(251,146,60,.3); color:#fb923c; }
+    .r4 { background:rgba(239,68,68,.1);  border-color:rgba(239,68,68,.3);  color:#f87171; }
+    .r5 { background:rgba(185,28,28,.2);  border-color:rgba(185,28,28,.5);  color:#fca5a5; }
+
+    /* ── Banner preview ── */
+    .update-banner {
+      display: inline-flex; align-items: center; gap: 12px;
+      background: #2563eb; color: #fff;
+      padding: 10px 20px; border-radius: 14px;
+      font-size: 13px; font-weight: 600;
+      box-shadow: 0 8px 24px rgba(37,99,235,.4);
+    }
+    .update-btn {
+      background: #fff; color: #1d4ed8;
+      font-size: 12px; font-weight: 700;
+      padding: 4px 12px; border-radius: 8px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .content { margin-left: 0; padding: 24px 20px; }
+    }
+
+    /* ── Print ── */
+    @media print {
+      .sidebar { display: none; }
+      .content { margin-left: 0; }
+    }
+
+    /* section anchor offset */
+    [id] { scroll-margin-top: 24px; }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="icon">💧</div>
+    <div>
+      <div class="sub">PHR Prabumulih</div>
+      <div class="brand">Pipeline Integrity</div>
+    </div>
+  </div>
+  <div class="nav-section">Panduan</div>
+  <a class="nav-item active" href="#overview">Tentang Sistem</a>
+  <a class="nav-item" href="#akses">Cara Mengakses</a>
+  <a class="nav-item" href="#alur">Alur Kerja</a>
+  <div class="nav-section">Modul</div>
+  <a class="nav-item" href="#dashboard">1. Dashboard</a>
+  <a class="nav-item" href="#flowline">2. Flowline Register</a>
+  <a class="nav-item" href="#monitoring">3. Monitoring Inspeksi</a>
+  <a class="nav-item" href="#kebocoran">4. History Kebocoran</a>
+  <a class="nav-item" href="#matrix">5. Decision Matrix</a>
+  <a class="nav-item" href="#cba">6. CBA Kalkulator</a>
+  <a class="nav-item" href="#users">7. Manajemen User</a>
+  <a class="nav-item" href="#import">8. Import Excel</a>
+  <div class="nav-section">Lainnya</div>
+  <a class="nav-item" href="#update">Notifikasi Update</a>
+  <a class="nav-item" href="#roles">Hak Akses Role</a>
+</nav>
+
+<!-- Content -->
+<main class="content">
+
+  <!-- Hero -->
+  <h1>Panduan Penggunaan</h1>
+  <p class="subtitle">Pipeline Integrity System — PHR Prabumulih Field</p>
+
+  <!-- Overview -->
+  <section id="overview">
+    <h2>🛢️ Tentang Sistem</h2>
+    <p>Pipeline Integrity System adalah aplikasi web berbasis PWA untuk <strong>memantau, mengelola, dan menganalisis kondisi integritas pipa</strong> di Prabumulih Field secara real-time.</p>
+    <p>Sistem ini menggantikan pencatatan manual di Excel dan memberikan visibilitas terpusat terhadap seluruh aset pipa — dari data register, hasil inspeksi, riwayat kebocoran, hingga analisis kelayakan penggantian.</p>
+
+    <div class="card-grid" style="margin-top:20px">
+      <div class="kpi-card blue">
+        <div class="kpi-title">Masalah Lama</div>
+        <div class="kpi-val" style="font-size:14px;color:#93c5fd">Data tersebar di banyak file Excel, tidak real-time, sulit dianalisis</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-title">Solusi Sistem</div>
+        <div class="kpi-val" style="font-size:14px;color:#86efac">Satu platform terpusat, update otomatis, analisis risiko visual</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Akses -->
+  <section id="akses">
+    <h2>🔗 Cara Mengakses</h2>
+    <div class="card">
+      <table>
+        <thead><tr><th>Platform</th><th>Cara</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Browser (Desktop/HP)</strong></td><td>Buka <strong>pipeline-integrity-swart.vercel.app</strong></td></tr>
+          <tr><td><strong>Install di HP (Android)</strong></td><td>Buka link → ketuk menu browser → "Tambahkan ke Layar Utama"</td></tr>
+          <tr><td><strong>Install di iPhone</strong></td><td>Buka di Safari → ketuk ikon Share → "Add to Home Screen"</td></tr>
+          <tr><td><strong>Login</strong></td><td>Gunakan email & password yang diberikan admin</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="alert alert-blue">
+      <span class="alert-icon">ℹ️</span>
+      <span>Setelah diinstal, aplikasi bisa dipakai tanpa selalu buka browser — tampil seperti aplikasi native di HP.</span>
+    </div>
+  </section>
+
+  <!-- Alur Kerja -->
+  <section id="alur">
+    <h2>🔄 Alur Kerja</h2>
+    <p>Begini cara sistem ini digunakan dalam siklus kerja lapangan:</p>
+    <div class="flow" style="margin-top:20px">
+      <div class="flow-item">
+        <div class="flow-line"><div class="flow-dot">🔧</div><div class="flow-connector"></div></div>
+        <div class="flow-body"><div class="flow-title">Terjadi kebocoran di lapangan</div><div class="flow-desc">Tim lapangan mendeteksi titik bocor</div></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-line"><div class="flow-dot">📝</div><div class="flow-connector"></div></div>
+        <div class="flow-body"><div class="flow-title">Catat di History Kebocoran</div><div class="flow-desc">Pilih segmen pipa → lokasi auto-terisi → simpan</div></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-line"><div class="flow-dot">⚡</div><div class="flow-connector"></div></div>
+        <div class="flow-body"><div class="flow-title">Sistem update otomatis</div><div class="flow-desc">Trigger database menambah hitungan bocor di segmen tersebut</div></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-line"><div class="flow-dot">📊</div><div class="flow-connector"></div></div>
+        <div class="flow-body"><div class="flow-title">Decision Matrix berubah</div><div class="flow-desc">PoF segmen naik → sel matriks berpindah ke zona lebih merah</div></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-line"><div class="flow-dot">💰</div><div class="flow-connector"></div></div>
+        <div class="flow-body"><div class="flow-title">Hitung kelayakan di CBA</div><div class="flow-desc">Data auto-fill dari segmen → isi parameter ekonomi → hitung NPV</div></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-line"><div class="flow-dot">✅</div><div class="flow-connector"></div></div>
+        <div class="flow-body"><div class="flow-title">Pipa diganti → update status</div><div class="flow-desc">Ubah integrity_status → GOOD → CoF turun → matriks kembali hijau</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dashboard -->
+  <section id="dashboard">
+    <h2>📊 1. Dashboard</h2>
+    <p>Ringkasan kondisi seluruh aset pipa dalam satu halaman. Dibuka pertama kali setiap hari untuk memantau kondisi keseluruhan.</p>
+
+    <h3>Informasi yang tersedia</h3>
+    <div class="card-grid">
+      <div class="kpi-card blue"><div class="kpi-title">Total Flowline</div><div class="kpi-val">313</div><div class="kpi-sub">Master register</div></div>
+      <div class="kpi-card blue"><div class="kpi-title">Total Segmen</div><div class="kpi-val">545</div><div class="kpi-sub">Monitoring inspeksi</div></div>
+      <div class="kpi-card red"><div class="kpi-title">Status BAD</div><div class="kpi-val">—</div><div class="kpi-sub">Perlu tindakan segera</div></div>
+      <div class="kpi-card red"><div class="kpi-title">P1 Prioritas</div><div class="kpi-val">—</div><div class="kpi-sub">Ganti/repair segera</div></div>
+    </div>
+
+    <h3>Cara menggunakan</h3>
+    <ol class="steps">
+      <li><span>Pantau card <strong>Status BAD</strong> dan <strong>P1</strong> — jika angka tinggi, ada pipa yang butuh perhatian segera</span></li>
+      <li><span>Cek tabel <strong>"COI/PLO Akan Berakhir"</strong> — perpanjang sertifikat sebelum lewat tanggal</span></li>
+      <li><span>Lihat <strong>5 kejadian bocor terbaru</strong> di panel kanan bawah</span></li>
+      <li><span>Klik <strong>Refresh</strong> di pojok kanan atas untuk update data tanpa reload halaman</span></li>
+    </ol>
+  </section>
+
+  <!-- Flowline -->
+  <section id="flowline">
+    <h2>🔗 2. Flowline Register</h2>
+    <p>Master data seluruh flowline — pipa dari sumur ke stasiun pengumpul. Data di sini adalah register resmi aset pipa.</p>
+
+    <h3>Data yang dikelola</h3>
+    <div class="card">
+      <table>
+        <thead><tr><th>Field</th><th>Keterangan</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Dari Sumur → Ke Stasiun</strong></td><td>Identitas titik awal dan akhir pipa</td></tr>
+          <tr><td><strong>Panjang (m)</strong></td><td>Panjang total flowline</td></tr>
+          <tr><td><strong>Tahun Konstruksi</strong></td><td>Tahun pipa dipasang</td></tr>
+          <tr><td><strong>Priority</strong></td><td><span class="badge badge-red">P1</span> Kritis &nbsp;<span class="badge badge-yellow">P2</span><span class="badge badge-yellow"> P3</span>&nbsp;<span class="badge badge-green">P4</span> Normal</td></tr>
+          <tr><td><strong>Integrity Status</strong></td><td><span class="badge badge-green">GOOD</span> &nbsp;<span class="badge badge-yellow">MONITOR</span> &nbsp;<span class="badge badge-red">BAD</span></td></tr>
+          <tr><td><strong>Sertifikat COI/PLO</strong></td><td>Nomor dan tanggal berlaku sertifikat</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Cara menggunakan</h3>
+    <ol class="steps">
+      <li><span>Klik <strong>+ Tambah</strong> untuk input flowline baru</span></li>
+      <li><span>Klik ikon <strong>✏️ pensil</strong> untuk edit data yang sudah ada</span></li>
+      <li><span>Ketik di kotak <strong>Cari</strong> untuk filter berdasarkan nama sumur, cluster, atau status</span></li>
+      <li><span>Klik <strong>Export</strong> untuk download semua data ke file Excel (.xlsx)</span></li>
+    </ol>
+  </section>
+
+  <!-- Monitoring -->
+  <section id="monitoring">
+    <h2>🔬 3. Monitoring Inspeksi</h2>
+    <p>Data teknis hasil inspeksi per segmen pipa. Lebih detail dari Flowline Register karena mencatat kondisi teknis aktual.</p>
+
+    <h3>Data yang dikelola</h3>
+    <div class="card">
+      <table>
+        <thead><tr><th>Field</th><th>Keterangan</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Kategori</strong></td><td>FLOWLINE / TRUNKLINE / INJECTION LINE</td></tr>
+          <tr><td><strong>Diameter (inch)</strong></td><td>Ukuran nominal pipa</td></tr>
+          <tr><td><strong>Corrosion Rate</strong></td><td>Laju korosi dalam mm/tahun</td></tr>
+          <tr><td><strong>Remain Life</strong></td><td>Estimasi sisa umur pakai (tahun)</td></tr>
+          <tr><td><strong>Leak Event</strong></td><td>Jumlah bocor — <strong>otomatis update</strong> dari History Kebocoran</td></tr>
+          <tr><td><strong>Integrity Status</strong></td><td>Hasil akhir penilaian kondisi segmen</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Cara menggunakan</h3>
+    <ol class="steps">
+      <li><span>Pilih filter <strong>ALL / GOOD / MONITOR / BAD</strong> untuk melihat per kategori status</span></li>
+      <li><span>Ketik nama lokasi di kotak pencarian untuk cari segmen spesifik</span></li>
+      <li><span>Klik <strong>✏️ pensil</strong> untuk update hasil inspeksi terbaru (corrosion rate, remain life, status)</span></li>
+      <li><span>Klik <strong>Export</strong> untuk download data ke Excel</span></li>
+    </ol>
+
+    <div class="alert alert-yellow">
+      <span class="alert-icon">⚠️</span>
+      <span>Kolom <strong>Leak Event</strong> tidak perlu diisi manual — akan otomatis bertambah setiap kali kebocoran baru dicatat dengan segmen yang dipilih.</span>
+    </div>
+  </section>
+
+  <!-- Kebocoran -->
+  <section id="kebocoran">
+    <h2>🔥 4. History Kebocoran</h2>
+    <p>Pencatatan dan penelusuran seluruh riwayat kejadian kebocoran pipa. Total lebih dari 5.500 data historis tersimpan di sistem.</p>
+
+    <h3>Cara mencatat kebocoran baru</h3>
+    <ol class="steps">
+      <li><span>Klik <strong>+ Catat</strong> di pojok kanan atas</span></li>
+      <li><span>Pilih <strong>Segmen Pipa</strong> dari dropdown — field Lokasi akan <strong>auto-terisi</strong> sesuai segmen</span></li>
+      <li><span>Isi tanggal kejadian, tanggal mulai & selesai perbaikan</span></li>
+      <li><span>Isi jumlah: <strong>Bocor (titik)</strong>, <strong>Clamp (titik)</strong>, <strong>Sadel (titik)</strong>, <strong>Sisip (m)</strong></span></li>
+      <li><span>Klik <strong>✓ Simpan</strong> — sistem otomatis update Decision Matrix</span></li>
+    </ol>
+
+    <h3>Summary cards</h3>
+    <p>Empat kartu di bagian atas menampilkan total <strong>seluruh data</strong> sesuai filter pencarian yang aktif — bukan hanya halaman yang sedang ditampilkan.</p>
+
+    <div class="alert alert-green">
+      <span class="alert-icon">✅</span>
+      <span>Setelah menyimpan kebocoran baru, buka <strong>Decision Matrix</strong> — segmen terkait otomatis berpindah ke zona risiko yang lebih tinggi.</span>
+    </div>
+  </section>
+
+  <!-- Matrix -->
+  <section id="matrix">
+    <h2>📐 5. Decision Matrix</h2>
+    <p>Visualisasi risiko seluruh segmen pipa dalam format matriks <strong>PoF × CoF</strong>. Membantu menentukan prioritas penanganan berbasis risiko.</p>
+
+    <h3>Cara membaca matriks</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:16px">
+      <div class="card">
+        <div class="kpi-title" style="margin-bottom:10px">PoF — Probability of Failure</div>
+        <table>
+          <tbody>
+            <tr><td><span class="badge badge-blue">PoF 1</span></td><td style="color:#64748b">0–1× bocor</td></tr>
+            <tr><td><span class="badge badge-blue">PoF 2</span></td><td style="color:#64748b">2–3× bocor</td></tr>
+            <tr><td><span class="badge badge-blue">PoF 3</span></td><td style="color:#64748b">4–7× bocor</td></tr>
+            <tr><td><span class="badge badge-blue">PoF 4</span></td><td style="color:#64748b">8–14× bocor</td></tr>
+            <tr><td><span class="badge badge-blue">PoF 5</span></td><td style="color:#64748b">≥15× bocor</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="kpi-title" style="margin-bottom:10px">CoF — Consequence of Failure</div>
+        <table>
+          <tbody>
+            <tr><td><span class="badge badge-red">CoF 5</span></td><td style="color:#64748b">Status BAD</td></tr>
+            <tr><td><span class="badge badge-red">CoF 4</span></td><td style="color:#64748b">MONITOR + Gas</td></tr>
+            <tr><td><span class="badge badge-yellow">CoF 3</span></td><td style="color:#64748b">MONITOR + Oil</td></tr>
+            <tr><td><span class="badge badge-yellow">CoF 2</span></td><td style="color:#64748b">GOOD + Gas</td></tr>
+            <tr><td><span class="badge badge-green">CoF 1</span></td><td style="color:#64748b">GOOD + Oil/Lain</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <h3>Risk Level</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+      <span class="badge badge-green" style="padding:6px 16px">R1 — Low</span>
+      <span class="badge badge-yellow" style="padding:6px 16px">R2 — Low-Med</span>
+      <span style="display:inline-flex;align-items:center;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;background:rgba(251,146,60,.15);color:#fb923c;border:1px solid rgba(251,146,60,.3)">R3 — Medium</span>
+      <span class="badge badge-red" style="padding:6px 16px">R4 — High</span>
+      <span style="display:inline-flex;align-items:center;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;background:rgba(185,28,28,.2);color:#fca5a5;border:1px solid rgba(185,28,28,.4)">R5 — Extreme</span>
+    </div>
+
+    <h3>Cara menggunakan</h3>
+    <ol class="steps">
+      <li><span>Lihat sel matriks yang <strong>paling merah (R4-R5)</strong> — segmen di sini adalah prioritas utama</span></li>
+      <li><span>Klik sel manapun untuk melihat daftar segmen di posisi risiko tersebut</span></li>
+      <li><span>Panel detail muncul di bawah — tampilkan nama segmen, status, dan jumlah bocor</span></li>
+      <li><span>Matrix <strong>otomatis berubah</strong> setiap ada kebocoran baru atau update status inspeksi</span></li>
+    </ol>
+  </section>
+
+  <!-- CBA -->
+  <section id="cba">
+    <h2>💰 6. CBA Kalkulator</h2>
+    <p>Menghitung kelayakan ekonomi penggantian pipa (Cost-Benefit Analysis). Output berupa NPV dan payback period untuk justifikasi pengajuan budget.</p>
+
+    <h3>Cara menggunakan</h3>
+    <ol class="steps">
+      <li><span>Pilih <strong>Segmen Pipa</strong> dari dropdown di bagian "Auto-fill dari Database"</span></li>
+      <li><span>Klik <strong>"Isi Otomatis dari Segmen Ini"</strong> — data teknis terisi otomatis:<br>
+        diameter, panjang, umur pipa, frekuensi bocor/tahun, toggle Oil/Gas</span></li>
+      <li><span>Cek apakah data teknis sudah benar — bisa diedit manual jika perlu</span></li>
+      <li><span>Isi <strong>Parameter Ekonomi</strong>: harga minyak/gas, biaya mobilisasi, gaji crew, WACC, dll</span></li>
+      <li><span>Tentukan <strong>Panjang Ganti (m)</strong> — berapa meter pipa yang akan diganti</span></li>
+      <li><span>Klik <strong>Hitung CBA</strong></span></li>
+    </ol>
+
+    <h3>Membaca hasil</h3>
+    <div class="card">
+      <table>
+        <thead><tr><th>Output</th><th>Artinya</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Kerugian Tahunan</strong></td><td>Total kerugian produksi + biaya darurat per tahun akibat bocor</td></tr>
+          <tr><td><strong>Total CAPEX</strong></td><td>Estimasi biaya penggantian pipa (material + mobilisasi + crew + mesin)</td></tr>
+          <tr><td><strong>NPV</strong></td><td>Jika <span class="badge badge-green">positif</span> → penggantian LAYAK. Jika <span class="badge badge-red">negatif</span> → belum layak</td></tr>
+          <tr><td><strong>Payback</strong></td><td>Berapa tahun modal penggantian kembali dari penghematan kerugian bocor</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="alert alert-blue">
+      <span class="alert-icon">💡</span>
+      <span>Hasil CBA bisa digunakan sebagai lampiran justifikasi ekonomi dalam <strong>pengajuan budget penggantian pipa ke manajemen</strong>.</span>
+    </div>
+  </section>
+
+  <!-- Users -->
+  <section id="users">
+    <h2>👥 7. Manajemen User <span style="font-size:12px;font-weight:500;color:#94a3b8">(Admin only)</span></h2>
+    <p>Mengelola akun pengguna sistem. Hanya bisa diakses oleh role Admin.</p>
+
+    <h3>Cara tambah user baru</h3>
+    <ol class="steps">
+      <li><span>Isi form: <strong>Username</strong>, <strong>Nama Lengkap</strong>, <strong>NIP</strong>, <strong>Role</strong></span></li>
+      <li><span>Klik <strong>Generate SQL</strong></span></li>
+      <li><span>Copy SQL yang muncul → paste di <strong>Supabase SQL Editor</strong> → Run</span></li>
+      <li><span>Berikan email dan password kepada user baru</span></li>
+    </ol>
+  </section>
+
+  <!-- Import -->
+  <section id="import">
+    <h2>📥 8. Import Excel <span style="font-size:12px;font-weight:500;color:#94a3b8">(Admin only)</span></h2>
+    <p>Upload data massal dari file Excel ke database. Berguna untuk migrasi data awal atau penambahan data dalam jumlah besar.</p>
+
+    <h3>Format file Excel</h3>
+    <div class="card">
+      <table>
+        <thead><tr><th>Sheet</th><th>Isi</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sheet 1</strong></td><td>Data Flowline (master register)</td></tr>
+          <tr><td><strong>Sheet 2</strong></td><td>Data Segmen Monitoring Inspeksi</td></tr>
+          <tr><td><strong>Sheet 3</strong></td><td>Data History Kebocoran</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Cara menggunakan</h3>
+    <ol class="steps">
+      <li><span>Klik <strong>Pilih File Excel</strong> → pilih file .xlsx</span></li>
+      <li><span>Sistem menampilkan preview jumlah baris per sheet yang akan diimport</span></li>
+      <li><span>Sistem otomatis <strong>skip duplikat</strong> — data yang sudah ada tidak akan diimport ulang</span></li>
+      <li><span>Klik <strong>Import</strong> untuk memasukkan data ke database</span></li>
+    </ol>
+  </section>
+
+  <!-- Update Banner -->
+  <section id="update">
+    <h2>🔔 Notifikasi Update Aplikasi</h2>
+    <p>Saat ada versi baru sistem yang di-deploy, banner ini akan muncul secara otomatis di bagian bawah layar:</p>
+    <div style="margin:20px 0;display:flex;justify-content:center">
+      <div class="update-banner">
+        🔄 &nbsp;Versi baru tersedia
+        <div class="update-btn">UPDATE</div>
+      </div>
+    </div>
+    <p>Klik tombol <strong>UPDATE</strong> untuk memuat versi terbaru. Tidak ada data yang hilang.</p>
+  </section>
+
+  <!-- Roles -->
+  <section id="roles">
+    <h2>🛡️ Hak Akses per Role</h2>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Role</th>
+            <th>Dashboard</th>
+            <th>Flowline</th>
+            <th>Monitoring</th>
+            <th>Kebocoran</th>
+            <th>Matrix</th>
+            <th>CBA</th>
+            <th>User Mgmt</th>
+            <th>Import</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-red">Admin</span></td>
+            <td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-blue">Inspektor</span></td>
+            <td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>—</td><td>—</td>
+          </tr>
+          <tr>
+            <td><span style="display:inline-flex;align-items:center;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;background:rgba(167,139,250,.15);color:#a78bfa;border:1px solid rgba(167,139,250,.3)">Sr. Mekanik</span></td>
+            <td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>—</td><td>—</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-green">Mekanik</span></td>
+            <td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>—</td><td>—</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-gray">Viewer</span></td>
+            <td>✅</td><td>👁️</td><td>👁️</td><td>👁️</td><td>✅</td><td>✅</td><td>—</td><td>—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:12px;color:#475569">✅ Akses penuh &nbsp;|&nbsp; 👁️ Hanya lihat &nbsp;|&nbsp; — Tidak ada akses</p>
+  </section>
+
+  <div style="margin-top:64px;padding-top:24px;border-top:1px solid #1e293b;color:#475569;font-size:12px">
+    Pipeline Integrity System — PHR Prabumulih Field &nbsp;·&nbsp; Diakses via pipeline-integrity-swart.vercel.app
+  </div>
+
+</main>
+
+<script>
+  // Active nav highlight on scroll
+  const sections = document.querySelectorAll('section[id]')
+  const navLinks = document.querySelectorAll('.nav-item[href^="#"]')
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove('active'))
+        const link = document.querySelector(`.nav-item[href="#${e.target.id}"]`)
+        if (link) link.classList.add('active')
+      }
+    })
+  }, { threshold: 0.3 })
+  sections.forEach(s => observer.observe(s))
+</script>
+
+</body>
+</html>
