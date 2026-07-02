@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Users, Copy, Check, RefreshCw, Eye, EyeOff, Shuffle, Trash2, X } from 'lucide-react'
 
-const ROLES = ['admin','mekanik','sr_mekanik','inspektor','viewer']
+const ROLES = ['admin','mekanik','sr_mekanik','spv','sr_spv','astmen','sm']
 
 function genPassword() {
   const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789'
