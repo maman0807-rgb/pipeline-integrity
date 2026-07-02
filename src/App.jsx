@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from './hooks/useAuth'
 import LoginPage from './components/LoginPage'
 import Layout from './components/Layout'
+import UpdateBanner from './components/UpdateBanner'
 import Dashboard from './pages/Dashboard'
 import Flowline from './pages/Flowline'
 import Monitoring from './pages/Monitoring'
@@ -39,8 +40,11 @@ export default function App() {
   const Page = PAGES[page] || Dashboard
 
   return (
-    <Layout page={page} onNav={setPage} onSignOut={signOut} profile={profile}>
-      <Page />
-    </Layout>
+    <>
+      <Layout page={page} onNav={setPage} onSignOut={signOut} profile={profile}>
+        <Page />
+      </Layout>
+      <UpdateBanner />
+    </>
   )
 }
