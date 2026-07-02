@@ -5,8 +5,8 @@ import { Users, Copy, Check, RefreshCw, Eye, EyeOff, Shuffle } from 'lucide-reac
 const ROLES = ['admin','mekanik','sr_mekanik','inspektor','viewer']
 
 function genPassword() {
-  const chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$'
-  return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+  const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789'
+  return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
 }
 
 export default function UserManagement() {
@@ -166,7 +166,7 @@ FROM auth.users WHERE email = '${email}';`
                 <Shuffle className="w-4 h-4" /> Generate
               </button>
             </div>
-            <p className="text-xs text-slate-500 mt-1">Min. 8 karakter. Berikan password ini ke user setelah dibuat.</p>
+            <p className="text-xs text-slate-500 mt-1">Min. 6 karakter. Berikan password ini ke user setelah dibuat.</p>
           </div>
         </div>
         <button onClick={generate} disabled={!form.username || !form.nama || !form.password}
