@@ -13,9 +13,9 @@ const KATEGORI = ['Pipe Fittings','Valve & Actuator','Gasket & Seal','Chemical',
 const SAFETY_DEFAULT = 5
 
 const EMPTY = {
-  part_number: '', description: '', category: 'Spare Part', satuan: '',
+  kimap: '', part_number: '', description: '', category: 'Spare Part', satuan: '',
   stok: 0, safety_stock: SAFETY_DEFAULT, unit_price: '', lead_time_days: '',
-  kimap: '', penyimpanan: '', tgl_masuk: '',
+  penyimpanan: '', tgl_masuk: '',
 }
 
 const rp = n => 'Rp ' + (Number(n) || 0).toLocaleString('id-ID')
@@ -131,8 +131,8 @@ export default function StokGudang() {
   })
 
   async function handleSave() {
-    if (!form.part_number) { toast('Part Number wajib diisi', 'error'); return }
-    if (!form.description) { toast('Description wajib diisi', 'error'); return }
+    if (!form.kimap?.trim()) { toast('KIMAP wajib diisi', 'error'); return }
+    if (!form.description) { toast('Deskripsi wajib diisi', 'error'); return }
     setSaving(true)
     const payload = {
       ...form,
@@ -210,9 +210,9 @@ export default function StokGudang() {
         kimap:          get(r,'kimap','ki map','kode kimap','no kimap'),
         penyimpanan:    get(r,'penyimpanan','lokasi','rak'),
         tgl_masuk:      get(r,'tgl masuk','tglmasuk','tanggal masuk') || null,
-      })).filter(r => r.part_number)
-      if (rows.length === 0) { toast('Tidak ada data valid — periksa header kolom', 'error'); return }
-      const { error } = await supabase.from('gudang_materials').upsert(rows, { onConflict: 'part_number', ignoreDuplicates: false })
+      })).filter(r => r.kimap)
+      if (rows.length === 0) { toast('Tidak ada data valid — pastikan kolom KIMAP terisi', 'error'); return }
+      const { error } = await supabase.from('gudang_materials').upsert(rows, { onConflict: 'kimap', ignoreDuplicates: false })
       if (error) toast('Gagal import: ' + error.message, 'error')
       else { toast(`${rows.length} part berhasil diimport`); loadMats() }
     }
@@ -502,10 +502,10 @@ export default function StokGudang() {
             </div>
             <div className="space-y-3 max-h-[65vh] overflow-y-auto pr-1">
               {[
-                ['Part Number','part_number','text',true],['Deskripsi','description','text',true],
-                ['Satuan','satuan','text'],['Stok','stok','number'],
-                ['Safety Stock','safety_stock','number'],['Harga Satuan (Rp)','unit_price','number'],
-                ['Lead Time (hari)','lead_time_days','number'],['KIMAP','kimap','text'],
+                ['KIMAP','kimap','text',true],['Deskripsi','description','text',true],
+                ['Part Number','part_number','text'],['Satuan','satuan','text'],
+                ['Stok','stok','number'],['Safety Stock','safety_stock','number'],
+                ['Harga Satuan (Rp)','unit_price','number'],['Lead Time (hari)','lead_time_days','number'],
                 ['Penyimpanan','penyimpanan','text'],['Tgl Masuk','tgl_masuk','date'],
               ].map(([l, k, t, req]) => (
                 <div key={k}>
