@@ -12,7 +12,7 @@ function genPassword() {
 export default function UserManagement() {
   const [users, setUsers]       = useState([])
   const [loading, setLoading]   = useState(true)
-  const [form, setForm]         = useState({ username: '', nama: '', nip: '', role: 'viewer', password: '' })
+  const [form, setForm]         = useState({ username: '', nama: '', nip: '', role: 'mekanik', password: '' })
   const [showPass, setShowPass] = useState(false)
   const [sql, setSql]           = useState('')
   const [copied, setCopied]     = useState(false)
