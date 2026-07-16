@@ -212,9 +212,13 @@ export default function StokGudang() {
         tgl_masuk:      get(r,'tgl masuk','tglmasuk','tanggal masuk') || null,
       })).filter(r => r.kimap)
       if (rows.length === 0) { toast('Tidak ada data valid — pastikan kolom KIMAP terisi', 'error'); return }
-      const { error } = await supabase.from('gudang_materials').upsert(rows, { onConflict: 'kimap', ignoreDuplicates: false })
+      // Dedupe by KIMAP — ON CONFLICT DO UPDATE gagal kalau 1 statement punya KIMAP duplikat. Baris terakhir menang.
+      const dedupMap = new Map(rows.map(r => [r.kimap, r]))
+      const dedupRows = [...dedupMap.values()]
+      const dupCount = rows.length - dedupRows.length
+      const { error } = await supabase.from('gudang_materials').upsert(dedupRows, { onConflict: 'kimap', ignoreDuplicates: false })
       if (error) toast('Gagal import: ' + error.message, 'error')
-      else { toast(`${rows.length} part berhasil diimport`); loadMats() }
+      else { toast(`${dedupRows.length} part berhasil diimport${dupCount ? ` (${dupCount} baris duplikat KIMAP di-skip)` : ''}`); loadMats() }
     }
     reader.readAsArrayBuffer(file)
     e.target.value = ''
